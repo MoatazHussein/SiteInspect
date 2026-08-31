@@ -1,0 +1,64 @@
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 480px);
+  align-items: center;
+  gap: clamp(2rem, 8vw, 8rem);
+  padding: clamp(1.5rem, 6vw, 6rem);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(244, 185, 66, 0.2), transparent 32%),
+    linear-gradient(135deg, #0d292a 0%, #174747 52%, #f2f6f5 52%);
+}
+
+.login-intro {
+  max-width: 650px;
+  color: #fff;
+}
+
+.login-intro h1 {
+  margin: 0.75rem 0 1rem;
+  color: #fff;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  line-height: 1.02;
+}
+
+.login-intro p {
+  max-width: 580px;
+  color: #c7d8d6;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.kicker {
+  color: #f4b942;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.login-card {
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(10, 35, 35, 0.2);
+}
+
+nz-alert {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+form {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: 1fr;
+    background: linear-gradient(160deg, #0d292a 0%, #174747 45%, #f2f6f5 45%);
+  }
+
+  .login-intro {
+    padding-top: 2rem;
+  }
+}

@@ -1,0 +1,62 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csproj,props,targets}]
+indent_style = space
+indent_size = 4
+
+[*.cs]
+# Keep namespaces aligned with the folder-oriented architecture and keep imports predictable.
+dotnet_sort_system_directives_first = true
+csharp_using_directive_placement = outside_namespace:warning
+csharp_style_namespace_declarations = file_scoped:warning
+
+# These rules prevent ambiguous control flow and make public API intent explicit.
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+# Prefer safe, modern C# without forcing subjective rewrites during a build.
+dotnet_style_readonly_field = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+dotnet_style_prefer_collection_expression = true:suggestion
+
+# Surface unused imports in the IDE without requiring XML documentation generation during builds.
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# Interfaces use the standard .NET I-prefix convention.
+dotnet_naming_rule.interfaces_should_have_i_prefix.symbols = interfaces
+dotnet_naming_rule.interfaces_should_have_i_prefix.style = i_prefix
+dotnet_naming_rule.interfaces_should_have_i_prefix.severity = warning
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_style.i_prefix.required_prefix = I
+dotnet_naming_style.i_prefix.capitalization = pascal_case
+
+# Private fields use camelCase consistently with the existing domain model.
+dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case.style = camel_case
+dotnet_naming_rule.private_fields_should_be_camel_case.severity = suggestion
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.camel_case.capitalization = camel_case
+
+# These public names are deliberate parts of the documented Result model.
+dotnet_diagnostic.CA1000.severity = none
+dotnet_diagnostic.CA1716.severity = none
+
+# EF migrations are generated artifacts; application style analyzers do not apply to them.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+
+[*.{json,yml,yaml,md,ts,html,scss,js}]
+indent_style = space
+indent_size = 2

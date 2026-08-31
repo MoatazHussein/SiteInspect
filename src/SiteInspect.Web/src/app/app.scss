@@ -1,0 +1,90 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  background: #102a2b;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 88px;
+  padding: 1.25rem;
+  color: #fff;
+}
+
+.brand:hover {
+  color: #fff;
+}
+
+.brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: #f4b942;
+  color: #102a2b;
+  font-weight: 800;
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand strong {
+  font-size: 1.05rem;
+}
+
+.brand small {
+  margin-top: 0.1rem;
+  color: #a9c4c1;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  min-height: 88px;
+  padding: 1rem clamp(1.25rem, 4vw, 3rem);
+  border-bottom: 1px solid #dde7e5;
+  background: rgba(255, 255, 255, 0.94);
+  line-height: 1.4;
+}
+
+.app-header strong,
+.eyebrow {
+  display: block;
+}
+
+.app-header strong {
+  color: #102a2b;
+  font-size: 1.15rem;
+}
+
+.eyebrow {
+  color: #57706d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.app-content {
+  padding: clamp(1.25rem, 4vw, 3rem);
+  background: #f2f6f5;
+}
+
+.app-footer {
+  padding: 1rem clamp(1.25rem, 4vw, 3rem);
+  background: #f2f6f5;
+  color: #6f817f;
+  font-size: 0.8rem;
+  text-align: left;
+}

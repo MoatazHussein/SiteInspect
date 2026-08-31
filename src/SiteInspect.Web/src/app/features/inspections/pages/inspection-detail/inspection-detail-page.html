@@ -1,0 +1,138 @@
+<main>
+  <a routerLink="/inspections" nz-button>← Inspection register</a>
+
+  @if (errorMessage(); as message) {
+    <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+  }
+
+  @if (successMessage(); as message) {
+    <nz-alert nzType="success" [nzMessage]="message" nzShowIcon />
+  }
+
+  @if (loading()) {
+    <nz-card><nz-skeleton nzActive /></nz-card>
+  } @else if (inspection(); as item) {
+    <section class="page-heading">
+      <div>
+        <span class="kicker">Inspection record</span>
+        <h1>{{ item.number }}</h1>
+        <p>{{ item.projectName }} · {{ item.locationName }}</p>
+      </div>
+      <div class="heading-actions">
+        @if (canStart(item)) {
+          <button
+            nz-button
+            nzType="primary"
+            type="button"
+            [nzLoading]="starting()"
+            (click)="startInspection()"
+          >
+            Start inspection
+          </button>
+        }
+        <nz-tag [nzColor]="statusColor(item.status)">{{ item.status }}</nz-tag>
+      </div>
+    </section>
+
+    <nz-card class="details-card" nzTitle="Overview">
+      <nz-descriptions [nzColumn]="{ xs: 1, sm: 2, lg: 3 }" nzBordered>
+        <nz-descriptions-item nzTitle="Template">
+          {{ item.templateName }} · version {{ item.templateVersion }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Inspector">
+          {{ item.assignedInspectorName }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Due">
+          {{ item.dueAtUtc | date: 'medium' }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Started">
+          {{ item.startedAtUtc ? (item.startedAtUtc | date: 'medium') : 'Not started' }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Submitted">
+          {{ item.submittedAtUtc ? (item.submittedAtUtc | date: 'medium') : 'Not submitted' }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Completed">
+          {{ item.completedAtUtc ? (item.completedAtUtc | date: 'medium') : 'Not completed' }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Cancelled">
+          {{ item.cancelledAtUtc ? (item.cancelledAtUtc | date: 'medium') : 'Not cancelled' }}
+        </nz-descriptions-item>
+        @if (item.cancellationReason) {
+          <nz-descriptions-item nzTitle="Cancellation reason">
+            {{ item.cancellationReason }}
+          </nz-descriptions-item>
+        }
+      </nz-descriptions>
+    </nz-card>
+
+    @if (
+      auth.hasAnyRole([roles.manager]) &&
+      (item.status === 'Assigned' || item.status === 'InProgress')
+    ) {
+      <nz-card class="management-card" nzTitle="Manager actions">
+        <div class="management-grid">
+          @if (item.status === 'Assigned') {
+            <form nz-form nzLayout="vertical" [formGroup]="assignmentForm" (ngSubmit)="reassign()">
+              <nz-form-item>
+                <nz-form-label nzRequired>Assigned inspector</nz-form-label>
+                <nz-form-control>
+                  <nz-select formControlName="inspectorId">
+                    @for (inspector of managementOptions()?.inspectors ?? []; track inspector.id) {
+                      <nz-option [nzValue]="inspector.id" [nzLabel]="inspector.name" />
+                    }
+                  </nz-select>
+                </nz-form-control>
+              </nz-form-item>
+              <button
+                nz-button
+                nzType="primary"
+                type="submit"
+                [nzLoading]="managing()"
+                [disabled]="assignmentForm.controls.inspectorId.value === item.assignedInspectorId"
+              >
+                Reassign
+              </button>
+            </form>
+          }
+
+          <form nz-form nzLayout="vertical" [formGroup]="cancellationForm">
+            <nz-form-item>
+              <nz-form-label nzRequired>Cancellation reason</nz-form-label>
+              <nz-form-control nzErrorTip="Enter a cancellation reason.">
+                <textarea
+                  nz-input
+                  formControlName="reason"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Why is this inspection being cancelled?"
+                ></textarea>
+              </nz-form-control>
+            </nz-form-item>
+            <button
+              nz-button
+              nzDanger
+              type="button"
+              nz-popconfirm
+              nzPopconfirmTitle="Cancel this inspection? This cannot be undone."
+              [nzLoading]="managing()"
+              [disabled]="cancellationForm.invalid"
+              (nzOnConfirm)="cancelInspection()"
+            >
+              Cancel inspection
+            </button>
+          </form>
+        </div>
+      </nz-card>
+    }
+
+    @if (item.status === 'InProgress') {
+      <app-inspection-checklist
+        [inspection]="item"
+        [editable]="canEditChecklist(item)"
+        (rowVersionChange)="updateDraftRowVersion($event)"
+      />
+    } @else {
+      <app-inspection-checklist [inspection]="item" />
+    }
+  }
+</main>

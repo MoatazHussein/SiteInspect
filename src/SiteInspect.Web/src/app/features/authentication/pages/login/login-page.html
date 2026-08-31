@@ -1,0 +1,40 @@
+<main class="login-page">
+  <section class="login-intro">
+    <span class="kicker">SiteInspect workspace</span>
+    <h1>Field inspections, without losing the operational thread.</h1>
+    <p>
+      Sign in to review assigned inspections, track due work, and keep every decision auditable.
+    </p>
+  </section>
+
+  <nz-card class="login-card" nzTitle="Sign in">
+    @if (errorMessage(); as message) {
+      <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+    }
+
+    <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+      <nz-form-item>
+        <nz-form-label nzRequired>Email</nz-form-label>
+        <nz-form-control nzErrorTip="Enter a valid email address.">
+          <input nz-input type="email" formControlName="email" autocomplete="username" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>Password</nz-form-label>
+        <nz-form-control nzErrorTip="Password is required.">
+          <input
+            nz-input
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button nz-button nzType="primary" nzBlock [nzLoading]="submitting()" type="submit">
+        Sign in
+      </button>
+    </form>
+  </nz-card>
+</main>

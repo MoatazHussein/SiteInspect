@@ -1,0 +1,36 @@
+@SiteInspect.Api_HostAddress = http://localhost:5180
+
+GET {{SiteInspect.Api_HostAddress}}/health/live
+X-Correlation-ID: api-http-client
+
+###
+
+GET {{SiteInspect.Api_HostAddress}}/health/ready
+
+###
+
+@ManagerPassword = SET_YOUR_LOCAL_MANAGER_PASSWORD
+@AccessToken = PASTE_ACCESS_TOKEN_FROM_LOGIN_RESPONSE
+
+POST {{SiteInspect.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+X-Correlation-ID: api-http-client
+
+{
+  "email": "manager@siteinspect.demo",
+  "password": "{{ManagerPassword}}"
+}
+
+###
+
+GET {{SiteInspect.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{AccessToken}}
+X-Correlation-ID: api-http-client
+
+###
+
+GET {{SiteInspect.Api_HostAddress}}/api/inspections?page=1&pageSize=20&status=Assigned
+Authorization: Bearer {{AccessToken}}
+X-Correlation-ID: api-http-client
+
+###

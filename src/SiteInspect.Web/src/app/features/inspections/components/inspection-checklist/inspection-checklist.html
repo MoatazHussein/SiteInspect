@@ -1,0 +1,89 @@
+<section class="checklist-heading">
+  <div>
+    <span class="kicker">Inspector checklist</span>
+    <h2>Site observations</h2>
+    <p>{{ answeredCount() }} of {{ observationForms.length }} items answered</p>
+  </div>
+
+  <div class="save-status" aria-live="polite">
+    @if (saveState() === 'saving') {
+      <span>Saving…</span>
+    } @else if (saveState() === 'saved' && savedAt(); as time) {
+      <span>Saved {{ time | date: 'shortTime' }}</span>
+    } @else if (editable()) {
+      <span>Changes save automatically</span>
+    } @else {
+      <span>Read-only</span>
+    }
+  </div>
+</section>
+
+<nz-progress [nzPercent]="progressPercent()" [nzShowInfo]="false" />
+
+@if (errorMessage(); as message) {
+  <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+}
+
+<form class="checklist" [formGroup]="form">
+  <div formArrayName="observations">
+    @for (section of sections; track section.name) {
+      <nz-card [nzTitle]="section.name">
+        @for (item of section.items; track item.observation.id) {
+          <article class="observation" [formGroupName]="item.formIndex">
+          <div class="observation-heading">
+            <div>
+              <span class="question-number">{{ item.observation.displayOrder }}</span>
+              <strong>{{ item.observation.question }}</strong>
+              @if (item.observation.isRequired) {
+                <small>Required</small>
+              }
+            </div>
+            <nz-tag [nzColor]="severityColor(item.observation.severity)">
+              {{ item.observation.severity }}
+            </nz-tag>
+          </div>
+
+          <!-- NG-ZORRO's radio-button directive requires label elements and supplies the input internally. -->
+          <nz-radio-group formControlName="outcome" nzButtonStyle="solid">
+            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+            <label nz-radio-button nzValue="Pass">Pass</label>
+            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+            <label nz-radio-button nzValue="Fail">Fail</label>
+            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+            <label nz-radio-button nzValue="NotApplicable">N/A</label>
+          </nz-radio-group>
+
+          @if (editable()) {
+            <button nz-button nzType="link" type="button" (click)="clearOutcome(item.formIndex)">
+              Clear
+            </button>
+          }
+
+          <textarea
+            nz-input
+            formControlName="notes"
+            rows="2"
+            maxlength="2000"
+            placeholder="Add inspection notes"
+          ></textarea>
+          </article>
+        }
+      </nz-card>
+    }
+  </div>
+</form>
+
+@if (editable()) {
+  <div class="checklist-actions">
+    <button
+      nz-button
+      nzType="primary"
+      type="button"
+      [nzLoading]="saveState() === 'saving'"
+      [disabled]="form.pristine || form.invalid || form.disabled"
+      (click)="saveNow()"
+    >
+      Save now
+    </button>
+  </div>
+}

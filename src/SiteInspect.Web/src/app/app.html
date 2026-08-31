@@ -1,0 +1,56 @@
+@if (auth.currentUser(); as user) {
+  <nz-layout class="app-shell">
+    <nz-sider class="app-sidebar" [nzWidth]="248" [nzBreakpoint]="'lg'" [nzCollapsedWidth]="0">
+      <a class="brand" [routerLink]="auth.defaultRoute()" aria-label="SiteInspect home">
+        <span class="brand-mark" aria-hidden="true">SI</span>
+        <span>
+          <strong>SiteInspect</strong>
+          <small>Field quality control</small>
+        </span>
+      </a>
+
+      <nav aria-label="Primary navigation">
+        <ul nz-menu nzTheme="dark" nzMode="inline">
+          @if (auth.hasAnyRole([roles.manager, roles.inspector])) {
+            <li nz-menu-item routerLinkActive="ant-menu-item-selected">
+              <a routerLink="/inspections">Inspections</a>
+            </li>
+          }
+          <li nz-menu-item routerLinkActive="ant-menu-item-selected">
+            <a routerLink="/foundation">Foundation</a>
+          </li>
+          @if (auth.hasAnyRole([roles.contractor])) {
+            <li nz-menu-item nzDisabled>Corrective actions · Phase 3</li>
+          }
+          @if (auth.hasAnyRole([roles.manager])) {
+            <li nz-menu-item nzDisabled>Dashboard · Phase 5</li>
+          }
+        </ul>
+      </nav>
+    </nz-sider>
+
+    <nz-layout>
+      <nz-header class="app-header">
+        <div>
+          <span class="eyebrow">Construction operations</span>
+          <strong>{{ user.displayName }}</strong>
+          <small>{{ user.roles.join(' · ') }}</small>
+        </div>
+        <div class="header-actions">
+          <nz-tag nzColor="green">Phase 2</nz-tag>
+          <button nz-button nzType="text" type="button" (click)="logout()">Sign out</button>
+        </div>
+      </nz-header>
+
+      <nz-content class="app-content">
+        <router-outlet />
+      </nz-content>
+
+      <nz-footer class="app-footer">
+        SiteInspect · Auditable inspections and corrective action
+      </nz-footer>
+    </nz-layout>
+  </nz-layout>
+} @else {
+  <router-outlet />
+}

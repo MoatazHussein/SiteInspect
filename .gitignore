@@ -1,0 +1,36 @@
+# .NET
+bin/
+obj/
+TestResults/
+artifacts/
+*.user
+*.suo
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+coverage/
+
+# IDE and OS
+.idea/
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local configuration and secrets
+appsettings.Local.json
+appsettings.*.Local.json
+.env
+.env.*
+!.env.example
+
+# Certificates and private keys
+*.pfx
+*.p12
+*.key
+
+# Logs
+logs/
+*.log

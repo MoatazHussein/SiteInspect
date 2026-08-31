@@ -1,0 +1,110 @@
+<main>
+  <section class="page-heading">
+    <div>
+      <span class="kicker">Inspection register</span>
+      <h1>Operational inspections</h1>
+      <p>Review assigned work, due dates, and completed inspection records.</p>
+    </div>
+    <div class="heading-actions">
+      @if (auth.hasAnyRole([roles.manager])) {
+        <a routerLink="new" nz-button nzType="primary">Create inspection</a>
+      }
+      <div class="summary">
+        <strong>{{ result()?.totalCount ?? 0 }}</strong>
+        <span>visible inspections</span>
+      </div>
+    </div>
+  </section>
+
+  <nz-card class="filters-card">
+    <form nz-form [formGroup]="filters" (ngSubmit)="applyFilters()">
+      <div class="filter-grid">
+        <input nz-input formControlName="search" placeholder="Number, project, or location" />
+
+        <nz-select formControlName="projectId" nzAllowClear nzPlaceHolder="Project">
+          @for (option of options()?.projects ?? []; track option.value) {
+            <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+          }
+        </nz-select>
+
+        <nz-select formControlName="locationId" nzAllowClear nzPlaceHolder="Location">
+          @for (option of options()?.locations ?? []; track option.value) {
+            <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+          }
+        </nz-select>
+
+        <nz-select formControlName="inspectorId" nzAllowClear nzPlaceHolder="Inspector">
+          @for (option of options()?.inspectors ?? []; track option.value) {
+            <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+          }
+        </nz-select>
+
+        <nz-select formControlName="status" nzAllowClear nzPlaceHolder="Status">
+          @for (option of options()?.statuses ?? []; track option.value) {
+            <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+          }
+        </nz-select>
+
+        <nz-range-picker formControlName="dueRange" nzShowTime />
+      </div>
+
+      <div class="filter-actions">
+        <button nz-button type="button" (click)="resetFilters()">Reset</button>
+        <button nz-button nzType="primary" type="submit">Apply filters</button>
+      </div>
+    </form>
+  </nz-card>
+
+  @if (errorMessage(); as message) {
+    <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+  }
+
+  <nz-card class="table-card">
+    <nz-table
+      #inspectionTable
+      [nzData]="result()?.items ?? []"
+      [nzLoading]="loading()"
+      [nzFrontPagination]="false"
+      [nzShowPagination]="false"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th>Inspection</th>
+          <th>Project / location</th>
+          <th>Inspector</th>
+          <th>Status</th>
+          <th>Due</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of inspectionTable.data; track item.id) {
+          <tr>
+            <td>
+              <a class="inspection-link" [routerLink]="[item.id]">{{ item.number }}</a>
+              <small>{{ item.templateName }} · v{{ item.templateVersion }}</small>
+            </td>
+            <td>
+              <strong>{{ item.projectName }}</strong>
+              <small>{{ item.locationName }}</small>
+            </td>
+            <td>{{ item.assignedInspectorName }}</td>
+            <td>
+              <nz-tag [nzColor]="statusColor(item.status)">{{ item.status }}</nz-tag>
+            </td>
+            <td>{{ item.dueAtUtc | date: 'mediumDate' }}</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    @if ((result()?.totalCount ?? 0) > pageSize) {
+      <nz-pagination
+        [nzPageIndex]="result()?.page ?? 1"
+        [nzPageSize]="pageSize"
+        [nzTotal]="result()?.totalCount ?? 0"
+        (nzPageIndexChange)="changePage($event)"
+      />
+    }
+  </nz-card>
+</main>

@@ -1,0 +1,84 @@
+<main>
+  <a routerLink="/inspections" nz-button>← Inspection register</a>
+
+  <section class="page-heading">
+    <span class="kicker">Manager workflow</span>
+    <h1>Create and assign inspection</h1>
+    <p>The selected template is copied into an immutable checklist snapshot.</p>
+  </section>
+
+  @if (errorMessage(); as message) {
+    <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+  }
+
+  <nz-card [nzLoading]="loadingOptions()">
+    <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-grid">
+        <nz-form-item>
+          <nz-form-label nzRequired>Project</nz-form-label>
+          <nz-form-control nzErrorTip="Select a project.">
+            <nz-select formControlName="projectId" nzPlaceHolder="Select project">
+              @for (project of options()?.projects ?? []; track project.id) {
+                <nz-option [nzValue]="project.id" [nzLabel]="project.name" />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Location</nz-form-label>
+          <nz-form-control nzErrorTip="Select a location.">
+            <nz-select
+              formControlName="locationId"
+              nzPlaceHolder="Select location"
+              [nzDisabled]="!selectedProjectId()"
+            >
+              @for (location of filteredLocations(); track location.id) {
+                <nz-option [nzValue]="location.id" [nzLabel]="location.name" />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Template</nz-form-label>
+          <nz-form-control nzErrorTip="Select a template.">
+            <nz-select formControlName="templateId" nzPlaceHolder="Select template">
+              @for (template of options()?.templates ?? []; track template.id) {
+                <nz-option
+                  [nzValue]="template.id"
+                  [nzLabel]="template.name + ' · version ' + template.version"
+                />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Inspector</nz-form-label>
+          <nz-form-control nzErrorTip="Select an inspector.">
+            <nz-select formControlName="inspectorId" nzPlaceHolder="Select inspector">
+              @for (inspector of options()?.inspectors ?? []; track inspector.id) {
+                <nz-option [nzValue]="inspector.id" [nzLabel]="inspector.name" />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Due date and time</nz-form-label>
+          <nz-form-control nzErrorTip="Select a future due date.">
+            <nz-date-picker formControlName="dueAt" nzShowTime nzFormat="yyyy-MM-dd HH:mm" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <div class="actions">
+        <a routerLink="/inspections" nz-button>Cancel</a>
+        <button nz-button nzType="primary" type="submit" [nzLoading]="saving()">
+          Create inspection
+        </button>
+      </div>
+    </form>
+  </nz-card>
+</main>

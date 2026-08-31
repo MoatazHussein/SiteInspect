@@ -1,0 +1,52 @@
+main > a,
+nz-alert {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.page-heading {
+  margin: 1.5rem 0;
+}
+
+.page-heading h1 {
+  margin: 0.35rem 0;
+  color: #102a2b;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.page-heading p {
+  margin: 0;
+  color: #647b78;
+}
+
+.kicker {
+  color: #b17505;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1rem;
+}
+
+nz-select,
+nz-date-picker {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 720px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
