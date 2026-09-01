@@ -129,10 +129,50 @@
       <app-inspection-checklist
         [inspection]="item"
         [editable]="canEditChecklist(item)"
-        (rowVersionChange)="updateDraftRowVersion($event)"
+        (draftSaved)="updateDraft($event)"
+        (attachmentUploaded)="updateAttachment($event)"
+        (readinessChange)="checklistReady.set($event)"
       />
     } @else {
       <app-inspection-checklist [inspection]="item" />
+    }
+
+    @if (canEditChecklist(item)) {
+      <nz-card class="submission-card" nzTitle="Review and submit">
+        @if (submissionIssues(item).length > 0) {
+          <nz-alert
+            nzType="warning"
+            nzMessage="Complete the inspection before submitting."
+            nzShowIcon
+          />
+          <ul>
+            @for (issue of submissionIssues(item); track issue) {
+              <li>{{ issue }}</li>
+            }
+          </ul>
+        } @else if (!checklistReady()) {
+          <p>Wait for the latest checklist or attachment change to finish saving.</p>
+        } @else {
+          <nz-alert
+            nzType="success"
+            nzMessage="All submission requirements are satisfied."
+            nzShowIcon
+          />
+        }
+
+        <button
+          nz-button
+          nzType="primary"
+          type="button"
+          nz-popconfirm
+          nzPopconfirmTitle="Submit this inspection? Its observations will become read-only."
+          [nzLoading]="submitting()"
+          [disabled]="!canSubmit(item) || submissionIssues(item).length > 0"
+          (nzOnConfirm)="submitInspection()"
+        >
+          Submit inspection
+        </button>
+      </nz-card>
     }
   }
 </main>

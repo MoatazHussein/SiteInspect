@@ -70,4 +70,27 @@ public sealed class InspectionObservation : BaseEntity
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         ObservedAtUtc = outcome is null && Notes is null ? null : observedAtUtc;
     }
+
+    internal InspectionAttachment AddAttachment(
+        string originalFileName,
+        string storedFileName,
+        string contentType,
+        long length)
+    {
+        if (attachments.Count >= 5)
+        {
+            throw new InvalidOperationException("An observation cannot have more than five attachments.");
+        }
+
+        var attachment = new InspectionAttachment(
+            Guid.CreateVersion7(),
+            Id,
+            originalFileName,
+            storedFileName,
+            contentType,
+            length);
+
+        attachments.Add(attachment);
+        return attachment;
+    }
 }

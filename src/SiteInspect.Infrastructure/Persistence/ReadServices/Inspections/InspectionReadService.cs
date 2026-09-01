@@ -132,7 +132,16 @@ internal sealed class InspectionReadService(
                 observation.Outcome,
                 observation.Severity,
                 observation.Notes,
-                observation.ObservedAtUtc))
+                observation.ObservedAtUtc,
+                observation.Attachments
+                    .OrderBy(attachment => attachment.CreatedAtUtc)
+                    .Select(attachment => new InspectionAttachmentResponse(
+                        attachment.Id,
+                        attachment.OriginalFileName,
+                        attachment.ContentType,
+                        attachment.Length,
+                        attachment.CreatedAtUtc))
+                    .ToArray()))
             .ToArrayAsync(cancellationToken);
 
         return Result<GetInspectionResponse>.Success(new GetInspectionResponse(

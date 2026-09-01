@@ -175,6 +175,69 @@ public sealed class Inspection : ConcurrentAuditableEntity
         LastDraftSavedAtUtc = observedAtUtc;
     }
 
+    public InspectionAttachment AddAttachment(
+        Guid inspectorId,
+        Guid observationId,
+        string originalFileName,
+        string storedFileName,
+        string contentType,
+        long length,
+        DateTimeOffset addedAtUtc)
+    {
+        EnsureAssignedInspector(inspectorId);
+
+        if (Status != InspectionStatus.InProgress)
+        {
+            throw new InvalidOperationException("Attachments can only be added to an in-progress inspection.");
+        }
+
+        var observation = observations.SingleOrDefault(item => item.Id == observationId)
+            ?? throw new InvalidOperationException(
+                $"Observation '{observationId}' does not belong to this inspection.");
+
+        var attachment = observation.AddAttachment(
+            originalFileName,
+            storedFileName,
+            contentType,
+            length);
+
+        LastDraftSavedAtUtc = addedAtUtc;
+        return attachment;
+    }
+
+    public void Submit(Guid inspectorId, DateTimeOffset submittedAtUtc)
+    {
+        EnsureAssignedInspector(inspectorId);
+
+        if (Status != InspectionStatus.InProgress)
+        {
+            throw new InvalidOperationException("Only an in-progress inspection can be submitted.");
+        }
+
+        if (observations.Any(item => item.IsRequiredSnapshot && item.Outcome is null))
+        {
+            throw new InvalidOperationException("Every required observation must have an outcome.");
+        }
+
+        if (observations.Any(item =>
+            item.Outcome == ObservationOutcome.Fail && string.IsNullOrWhiteSpace(item.Notes)))
+        {
+            throw new InvalidOperationException("Every failed observation must include notes.");
+        }
+
+        if (observations.Any(item =>
+            item.Outcome == ObservationOutcome.Fail &&
+            item.Severity is Severity.High or Severity.Critical &&
+            item.Attachments.Count == 0))
+        {
+            throw new InvalidOperationException(
+                "Every High or Critical failed observation must include a photo.");
+        }
+
+        Status = InspectionStatus.Submitted;
+        SubmittedAtUtc = submittedAtUtc;
+    }
+
     public void Reassign(Guid inspectorId)
     {
         if (Status != InspectionStatus.Assigned)

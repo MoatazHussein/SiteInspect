@@ -63,4 +63,44 @@ public static class InspectionErrors
         "Inspection.ObservationNotFound",
         $"Observation '{observationId}' does not belong to this inspection.",
         ErrorType.Validation);
+
+    public static readonly Error AttachmentNotAllowed = new(
+        "Inspection.AttachmentNotAllowed",
+        "Attachments can only be added to an in-progress inspection by its assigned inspector.",
+        ErrorType.Conflict);
+
+    public static readonly Error AttachmentLimitReached = new(
+        "Inspection.AttachmentLimitReached",
+        "An observation cannot have more than five attachments.",
+        ErrorType.Validation);
+
+    public static readonly Error InvalidAttachmentContent = new(
+        "Inspection.InvalidAttachmentContent",
+        "The uploaded file content does not match a supported image format.",
+        ErrorType.Validation);
+
+    public static Error AttachmentNotFound(Guid attachmentId) => new(
+        "Inspection.AttachmentNotFound",
+        $"Attachment '{attachmentId}' was not found.",
+        ErrorType.NotFound);
+
+    public static readonly Error SubmissionNotAllowed = new(
+        "Inspection.SubmissionNotAllowed",
+        "Only an in-progress inspection can be submitted.",
+        ErrorType.Conflict);
+
+    public static readonly Error RequiredObservationsIncomplete = new(
+        "Inspection.RequiredObservationsIncomplete",
+        "Every required observation must have an outcome before submission.",
+        ErrorType.Validation);
+
+    public static readonly Error FailedObservationNotesRequired = new(
+        "Inspection.FailedObservationNotesRequired",
+        "Every failed observation must include notes before submission.",
+        ErrorType.Validation);
+
+    public static readonly Error FailurePhotoRequired = new(
+        "Inspection.FailurePhotoRequired",
+        "Every High or Critical failed observation must include a photo before submission.",
+        ErrorType.Validation);
 }

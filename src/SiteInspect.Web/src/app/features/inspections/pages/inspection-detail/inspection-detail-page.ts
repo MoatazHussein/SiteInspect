@@ -17,6 +17,10 @@ import { getApiErrorMessage } from '../../../../core/api/api-error';
 import { roles } from '../../../../core/auth/auth.models';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { InspectionChecklist } from '../../components/inspection-checklist/inspection-checklist';
+import {
+  InspectionAttachmentUploaded,
+  InspectionDraftSaved,
+} from '../../models/inspection-execution.models';
 import { InspectionManagementOptions } from '../../models/inspection-management.models';
 import { InspectionDetail, InspectionStatus } from '../../models/inspection.models';
 import { InspectionService } from '../../services/inspection.service';
@@ -56,6 +60,8 @@ export class InspectionDetailPage implements OnInit {
   readonly managementOptions = signal<InspectionManagementOptions | null>(null);
   readonly managing = signal(false);
   readonly starting = signal(false);
+  readonly submitting = signal(false);
+  readonly checklistReady = signal(true);
   readonly successMessage = signal<string | null>(null);
   readonly assignmentForm = this.formBuilder.group({
     inspectorId: this.formBuilder.control<string | null>(null, Validators.required),
@@ -166,10 +172,101 @@ export class InspectionDetailPage implements OnInit {
       this.auth.hasAnyRole([roles.inspector]);
   }
 
-  updateDraftRowVersion(rowVersion: string): void {
+  updateDraft(saved: InspectionDraftSaved): void {
+    const drafts = new Map(saved.observations.map((observation) => [
+      observation.observationId,
+      observation,
+    ]));
+
     this.inspection.update((item) => item
-      ? { ...item, rowVersion, lastDraftSavedAtUtc: new Date().toISOString() }
+      ? {
+          ...item,
+          rowVersion: saved.rowVersion,
+          lastDraftSavedAtUtc: new Date().toISOString(),
+          observations: item.observations.map((observation) => {
+            const draft = drafts.get(observation.id);
+            return draft
+              ? { ...observation, outcome: draft.outcome, notes: draft.notes }
+              : observation;
+          }),
+        }
       : null);
+  }
+
+  updateAttachment(uploaded: InspectionAttachmentUploaded): void {
+    this.inspection.update((item) => item
+      ? {
+          ...item,
+          rowVersion: uploaded.rowVersion,
+          lastDraftSavedAtUtc: new Date().toISOString(),
+          observations: item.observations.map((observation) =>
+            observation.id === uploaded.observationId
+              ? {
+                  ...observation,
+                  attachments: [...observation.attachments, {
+                    id: uploaded.id,
+                    fileName: uploaded.fileName,
+                    contentType: uploaded.contentType,
+                    length: uploaded.length,
+                    uploadedAtUtc: uploaded.uploadedAtUtc,
+                  }],
+                }
+              : observation),
+        }
+      : null);
+  }
+
+  submitInspection(): void {
+    const item = this.inspection();
+    if (!item || !this.canSubmit(item) || this.submissionIssues(item).length > 0) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.inspectionService
+      .submit(item.id, item.rowVersion)
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('The inspection was submitted and is now read-only.');
+          this.loadInspection(item.id);
+        },
+        error: (error: unknown) => this.errorMessage.set(getApiErrorMessage(error)),
+      });
+  }
+
+  canSubmit(item: InspectionDetail): boolean {
+    return this.canEditChecklist(item) && this.checklistReady();
+  }
+
+  submissionIssues(item: InspectionDetail): readonly string[] {
+    const issues: string[] = [];
+    const requiredIncomplete = item.observations.filter(
+      (observation) => observation.isRequired && observation.outcome === null,
+    ).length;
+    const failedWithoutNotes = item.observations.filter(
+      (observation) => observation.outcome === 'Fail' && !observation.notes?.trim(),
+    ).length;
+    const failedWithoutPhotos = item.observations.filter(
+      (observation) =>
+        observation.outcome === 'Fail' &&
+        (observation.severity === 'High' || observation.severity === 'Critical') &&
+        observation.attachments.length === 0,
+    ).length;
+
+    if (requiredIncomplete > 0) {
+      issues.push(`${requiredIncomplete} required item(s) still need an outcome.`);
+    }
+    if (failedWithoutNotes > 0) {
+      issues.push(`${failedWithoutNotes} failed item(s) still need notes.`);
+    }
+    if (failedWithoutPhotos > 0) {
+      issues.push(`${failedWithoutPhotos} High/Critical failure(s) still need photo evidence.`);
+    }
+
+    return issues;
   }
 
   statusColor(status: InspectionStatus): string {

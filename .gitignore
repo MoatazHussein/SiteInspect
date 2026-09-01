@@ -5,6 +5,8 @@ TestResults/
 artifacts/
 *.user
 *.suo
+*.tmp
+*.bak
 
 # Angular / Node
 node_modules/
@@ -34,3 +36,6 @@ appsettings.*.Local.json
 # Logs
 logs/
 *.log
+
+# Local runtime storage
+**/App_Data/attachments/

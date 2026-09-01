@@ -15,7 +15,10 @@ import {
   InspectionManagementOptions,
   InspectionMutationResult,
 } from '../models/inspection-management.models';
-import { SaveInspectionObservationDraft } from '../models/inspection-execution.models';
+import {
+  InspectionAttachmentUploaded,
+  SaveInspectionObservationDraft,
+} from '../models/inspection-execution.models';
 
 @Injectable({ providedIn: 'root' })
 export class InspectionService {
@@ -107,6 +110,39 @@ export class InspectionService {
         inspectionId,
         rowVersion,
         observations,
+      })
+      .pipe(map((response) => this.requireData(response)));
+  }
+
+  uploadAttachment(
+    inspectionId: string,
+    observationId: string,
+    rowVersion: string,
+    file: File,
+  ): Observable<InspectionAttachmentUploaded> {
+    const formData = new FormData();
+    formData.set('inspectionId', inspectionId);
+    formData.set('observationId', observationId);
+    formData.set('rowVersion', rowVersion);
+    formData.set('file', file, file.name);
+
+    return this.http
+      .post<ApiResponse<InspectionAttachmentUploaded>>(`${this.endpoint}/attachments`, formData)
+      .pipe(map((response) => this.requireData(response)));
+  }
+
+  downloadAttachment(inspectionId: string, attachmentId: string): Observable<Blob> {
+    return this.http.get(
+      `${this.endpoint}/${inspectionId}/attachments/${attachmentId}`,
+      { responseType: 'blob' },
+    );
+  }
+
+  submit(inspectionId: string, rowVersion: string): Observable<InspectionMutationResult> {
+    return this.http
+      .post<ApiResponse<InspectionMutationResult>>(`${this.endpoint}/submit`, {
+        inspectionId,
+        rowVersion,
       })
       .pipe(map((response) => this.requireData(response)));
   }

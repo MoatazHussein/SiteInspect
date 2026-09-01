@@ -2,7 +2,7 @@
 
 SiteInspect is a portfolio-grade field inspection and corrective-action platform built as a .NET 10 modular monolith with an Angular 22 PWA frontend and a separate background worker.
 
-Phase 1 adds Identity sessions, demo seed data, and role-scoped inspection read models on top of the architecture foundation. Inspection execution begins in Phase 2; see the [full product and implementation plan](SiteInspect-README.md).
+Phase 2 now supports the complete synchronous inspection-execution workflow: Manager assignment, Inspector checklist drafts, protected photo evidence, submission validation, and immutable submitted observations. Corrective-action messaging begins in Phase 3; see the [full product and implementation plan](SiteInspect-README.md).
 
 ## Quick start
 

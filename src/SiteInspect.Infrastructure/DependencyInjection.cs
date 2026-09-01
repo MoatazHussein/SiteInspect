@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SiteInspect.Application.Common.Abstractions.Identity;
 using SiteInspect.Application.Common.Abstractions.Persistence;
+using SiteInspect.Application.Common.Abstractions.Storage;
 using SiteInspect.Application.Features.Authentication.Common;
 using SiteInspect.Application.Features.Inspections.Common;
 using SiteInspect.Infrastructure.Health;
@@ -16,6 +17,7 @@ using SiteInspect.Infrastructure.Persistence;
 using SiteInspect.Infrastructure.Persistence.Initialization;
 using SiteInspect.Infrastructure.Persistence.ReadServices.Inspections;
 using SiteInspect.Infrastructure.Persistence.Repositories;
+using SiteInspect.Infrastructure.Storage;
 
 namespace SiteInspect.Infrastructure;
 
@@ -49,6 +51,7 @@ public static class DependencyInjection
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IInspectionRepository, InspectionRepository>();
+        services.AddSingleton<IInspectionAttachmentStorage, LocalInspectionAttachmentStorage>();
         services.AddScoped<IInspectionTemplateRepository, InspectionTemplateRepository>();
         services.AddScoped<IInspectorDirectory, InspectorDirectory>();
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ApplicationDbContext>());

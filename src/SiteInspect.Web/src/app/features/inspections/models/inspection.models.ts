@@ -4,6 +4,14 @@ export type InspectionStatus =
 export type ObservationOutcome = 'Pass' | 'Fail' | 'NotApplicable';
 export type Severity = 'Low' | 'Medium' | 'High' | 'Critical';
 
+export interface InspectionAttachment {
+  readonly id: string;
+  readonly fileName: string;
+  readonly contentType: string;
+  readonly length: number;
+  readonly uploadedAtUtc: string;
+}
+
 export interface PagedResult<T> {
   readonly items: readonly T[];
   readonly page: number;
@@ -36,6 +44,7 @@ export interface InspectionObservation {
   readonly severity: Severity;
   readonly notes: string | null;
   readonly observedAtUtc: string | null;
+  readonly attachments: readonly InspectionAttachment[];
 }
 
 export interface InspectionDetail {

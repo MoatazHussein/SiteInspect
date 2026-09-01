@@ -66,6 +66,54 @@
             maxlength="2000"
             placeholder="Add inspection notes"
           ></textarea>
+
+          <div class="attachments">
+            <div class="attachments-heading">
+              <strong>Photo evidence</strong>
+              @if (
+                item.observation.severity === 'High' || item.observation.severity === 'Critical'
+              ) {
+                <small>Required when failed</small>
+              }
+            </div>
+
+            @for (attachment of attachmentsFor(item.observation.id); track attachment.id) {
+              <button
+                nz-button
+                nzType="link"
+                type="button"
+                (click)="downloadAttachment(attachment)"
+              >
+                {{ attachment.fileName }} · {{ formatFileSize(attachment.length) }}
+              </button>
+            } @empty {
+              <span class="empty-attachments">No photos attached</span>
+            }
+
+            @if (editable()) {
+              <input
+                #fileInput
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                (change)="selectAttachment(item.observation.id, $event)"
+              />
+              <button
+                nz-button
+                type="button"
+                [nzLoading]="uploadingObservationId() === item.observation.id"
+                [disabled]="
+                  uploadingObservationId() !== null ||
+                  form.dirty ||
+                  saveState() === 'saving' ||
+                  attachmentsFor(item.observation.id).length >= 5
+                "
+                (click)="fileInput.click()"
+              >
+                Add photo
+              </button>
+            }
+          </div>
           </article>
         }
       </nz-card>

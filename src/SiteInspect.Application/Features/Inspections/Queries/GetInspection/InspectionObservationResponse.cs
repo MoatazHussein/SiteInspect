@@ -12,4 +12,5 @@ public sealed record InspectionObservationResponse(
     ObservationOutcome? Outcome,
     Severity Severity,
     string? Notes,
-    DateTimeOffset? ObservedAtUtc);
+    DateTimeOffset? ObservedAtUtc,
+    IReadOnlyCollection<InspectionAttachmentResponse> Attachments);

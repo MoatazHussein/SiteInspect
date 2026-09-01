@@ -14,5 +14,9 @@ public interface IInspectionRepository
         byte[] expectedRowVersion,
         CancellationToken cancellationToken = default);
 
+    Task<Inspection?> GetWithAttachmentsAsync(
+        Guid inspectionId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Inspection inspection, CancellationToken cancellationToken = default);
 }
