@@ -30,7 +30,6 @@ public sealed class UploadInspectionAttachmentHandler(
 
         var inspection = await inspectionRepository.GetWithObservationsForUpdateAsync(
             command.InspectionId,
-            RowVersionToken.Decode(command.RowVersion),
             cancellationToken);
 
         if (inspection is null)
@@ -38,6 +37,8 @@ public sealed class UploadInspectionAttachmentHandler(
             return Result<UploadInspectionAttachmentResponse>.Failure(
                 InspectionErrors.NotFound(command.InspectionId));
         }
+
+        inspection.EnsureCurrentVersion(command.RowVersion);
 
         if (inspection.AssignedInspectorId != inspectorId)
         {

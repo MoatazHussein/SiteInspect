@@ -238,6 +238,41 @@ public sealed class Inspection : ConcurrentAuditableEntity
         SubmittedAtUtc = submittedAtUtc;
     }
 
+    public void OpenCorrectiveActions(Guid observationId)
+    {
+        if (Status is not (InspectionStatus.Submitted or InspectionStatus.CorrectiveActionsOpen))
+        {
+            throw new InvalidOperationException("Corrective actions require a submitted inspection.");
+        }
+        if (!observations.Any(item => item.Id == observationId && item.Outcome == ObservationOutcome.Fail))
+        {
+            throw new InvalidOperationException("Corrective actions require a failed observation on this inspection.");
+        }
+        Status = InspectionStatus.CorrectiveActionsOpen;
+    }
+
+    public void Complete(
+        IReadOnlyCollection<Guid> closedCorrectiveActionObservationIds,
+        DateTimeOffset completedAtUtc)
+    {
+        if (Status is not (InspectionStatus.Submitted or InspectionStatus.CorrectiveActionsOpen))
+        {
+            throw new InvalidOperationException("Only a submitted inspection can be completed.");
+        }
+
+        var failedObservationIds = observations
+            .Where(item => item.Outcome == ObservationOutcome.Fail)
+            .Select(item => item.Id);
+        if (failedObservationIds.Except(closedCorrectiveActionObservationIds).Any())
+        {
+            throw new InvalidOperationException(
+                "Every failed observation must have a closed corrective action.");
+        }
+
+        Status = InspectionStatus.Completed;
+        CompletedAtUtc = completedAtUtc;
+    }
+
     public void Reassign(Guid inspectorId)
     {
         if (Status != InspectionStatus.Assigned)

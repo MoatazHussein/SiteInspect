@@ -24,12 +24,15 @@ import {
 import { InspectionManagementOptions } from '../../models/inspection-management.models';
 import { InspectionDetail, InspectionStatus } from '../../models/inspection.models';
 import { InspectionService } from '../../services/inspection.service';
+import { CorrectiveActionPanel } from '../../../corrective-actions/components/corrective-action-panel';
+import { CorrectiveActionCreated } from '../../../corrective-actions/models/corrective-action.models';
 
 @Component({
   selector: 'app-inspection-detail-page',
   imports: [
     DatePipe,
     InspectionChecklist,
+    CorrectiveActionPanel,
     ReactiveFormsModule,
     RouterLink,
     NzAlertModule,
@@ -282,7 +285,13 @@ export class InspectionDetailPage implements OnInit {
     return colors[status];
   }
 
-  private loadInspection(inspectionId: string): void {
+  updateCorrectiveAction(result: CorrectiveActionCreated): void {
+    this.inspection.update((item) => item
+      ? { ...item, status: result.inspectionStatus, rowVersion: result.rowVersion }
+      : null);
+  }
+
+  loadInspection(inspectionId: string): void {
     this.loading.set(true);
     this.inspectionService
       .get(inspectionId)

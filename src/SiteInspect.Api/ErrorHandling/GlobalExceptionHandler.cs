@@ -11,7 +11,7 @@ internal sealed partial class GlobalExceptionHandler(ILogger<GlobalExceptionHand
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (exception is PersistenceConcurrencyException)
+        if (exception is PersistenceConcurrencyException or StaleRowVersionException)
         {
             LogConcurrencyConflict(logger, httpContext.Request.Method, httpContext.Request.Path);
 

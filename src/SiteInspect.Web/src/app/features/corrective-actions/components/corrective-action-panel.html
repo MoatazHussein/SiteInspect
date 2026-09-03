@@ -1,0 +1,192 @@
+<nz-card nzTitle="Corrective actions">
+  <p>Assign corrective work for failed observations. Each observation can have one action.</p>
+
+  @if (errorMessage(); as message) {
+    <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+  }
+  @if (successMessage(); as message) {
+    <nz-alert nzType="success" [nzMessage]="message" nzShowIcon />
+  }
+  @if (concurrencyBlocked()) {
+    <button nz-button type="button" (click)="reloadRequested.emit()">Reload inspection</button>
+  }
+
+  @if (loading()) {
+    <p role="status">Loading corrective actions…</p>
+  } @else if (loadFailed()) {
+    <button nz-button type="button" (click)="load()">Retry loading</button>
+  } @else {
+    <div class="action-list">
+      @for (action of actions(); track action.id) {
+        <article class="action">
+          <div class="action-heading">
+            <h3>{{ observationLabel(action.observationId) }}</h3>
+            <nz-tag [nzColor]="action.status === 'Closed' ? 'green' : 'orange'">{{
+              action.status
+            }}</nz-tag>
+          </div>
+          <p class="description">{{ action.description }}</p>
+          @if (action.resolutionNotes) {
+            <div class="resolution">
+              <strong>Contractor response</strong>
+              <p>{{ action.resolutionNotes }}</p>
+            </div>
+          }
+          @if (action.rejectionReason && action.status === 'Open') {
+            <nz-alert
+              nzType="warning"
+              nzMessage="Changes requested"
+              [nzDescription]="action.rejectionReason"
+              nzShowIcon
+            />
+          }
+          <dl>
+            <div>
+              <dt>Contractor</dt>
+              <dd>{{ action.assignedContractorName }}</dd>
+            </div>
+            <div>
+              <dt>Due</dt>
+              <dd>{{ action.dueAtUtc | date: 'medium' }}</dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{{ action.createdAtUtc | date: 'medium' }}</dd>
+            </div>
+          </dl>
+
+          @if (action.status === 'ReadyForReview') {
+            <div class="review-actions">
+              <button
+                nz-button
+                nzType="primary"
+                type="button"
+                [nzLoading]="reviewingActionId() === action.id"
+                [disabled]="reviewingActionId() !== null"
+                (click)="approve(action)"
+              >
+                Approve &amp; close
+              </button>
+              <textarea
+                #rejectionReason
+                nz-input
+                rows="2"
+                maxlength="2000"
+                placeholder="Reason for requesting changes"
+              ></textarea>
+              <button
+                nz-button
+                type="button"
+                [nzLoading]="reviewingActionId() === action.id"
+                [disabled]="reviewingActionId() !== null || !rejectionReason.value.trim()"
+                (click)="reject(action, rejectionReason.value)"
+              >
+                Request changes
+              </button>
+            </div>
+          }
+        </article>
+      } @empty {
+        <p>No corrective actions have been assigned yet.</p>
+      }
+    </div>
+
+    @if (canCreate() && !concurrencyBlocked()) {
+      @if (availableObservations().length === 0) {
+        <p class="empty-state">No unassigned failed observations remain.</p>
+      } @else if (contractors().length === 0) {
+        <nz-alert
+          nzType="warning"
+          nzMessage="No contractor accounts are available. Create a contractor account before assigning work."
+          nzShowIcon
+        />
+      } @else {
+        <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+          <h3>Create and assign action</h3>
+          <nz-form-item>
+            <nz-form-label nzFor="action-observation" nzRequired>Failed observation</nz-form-label>
+            <nz-form-control nzErrorTip="Select a failed observation.">
+              <nz-select
+                nzId="action-observation"
+                formControlName="observationId"
+                nzPlaceHolder="Choose an observation"
+              >
+                @for (observation of availableObservations(); track observation.id) {
+                  <nz-option
+                    [nzValue]="observation.id"
+                    [nzLabel]="observationLabel(observation.id)"
+                  />
+                }
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="action-description" nzRequired>Work required</nz-form-label>
+            <nz-form-control nzErrorTip="Describe the required work (up to 2000 characters).">
+              <textarea
+                id="action-description"
+                nz-input
+                formControlName="description"
+                rows="3"
+                maxlength="2000"
+                placeholder="Describe what the contractor needs to fix"
+              ></textarea>
+            </nz-form-control>
+          </nz-form-item>
+          <div class="assignment-grid">
+            <nz-form-item>
+              <nz-form-label nzFor="action-contractor" nzRequired>Contractor</nz-form-label>
+              <nz-form-control nzErrorTip="Select a contractor.">
+                <nz-select
+                  nzId="action-contractor"
+                  formControlName="contractorId"
+                  nzPlaceHolder="Choose a contractor"
+                >
+                  @for (contractor of contractors(); track contractor.id) {
+                    <nz-option [nzValue]="contractor.id" [nzLabel]="contractor.name" />
+                  }
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="action-due" nzRequired>Due date and time</nz-form-label>
+              <nz-form-control nzErrorTip="Choose a future due date.">
+                <nz-date-picker
+                  nzId="action-due"
+                  formControlName="dueAt"
+                  nzShowTime
+                  nzFormat="yyyy-MM-dd HH:mm"
+                />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <button
+            nz-button
+            nzType="primary"
+            type="submit"
+            [nzLoading]="saving()"
+            [disabled]="saving() || form.invalid"
+          >
+            Create &amp; assign action
+          </button>
+        </form>
+      }
+    }
+
+    @if (canComplete()) {
+      <div class="completion">
+        <p>All failed observations have closed corrective actions.</p>
+        <button
+          nz-button
+          nzType="primary"
+          type="button"
+          [nzLoading]="completing()"
+          [disabled]="completing() || reviewingActionId() !== null"
+          (click)="completeInspection()"
+        >
+          Complete inspection
+        </button>
+      </div>
+    }
+  }
+</nz-card>

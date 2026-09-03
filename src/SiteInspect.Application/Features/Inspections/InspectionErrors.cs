@@ -103,4 +103,14 @@ public static class InspectionErrors
         "Inspection.FailurePhotoRequired",
         "Every High or Critical failed observation must include a photo before submission.",
         ErrorType.Validation);
+
+    public static readonly Error CompletionNotAllowed = new(
+        "Inspection.CompletionNotAllowed",
+        "Only a submitted inspection can be completed.",
+        ErrorType.Conflict);
+
+    public static readonly Error CorrectiveActionsIncomplete = new(
+        "Inspection.CorrectiveActionsIncomplete",
+        "Every failed observation must have a closed corrective action before completion.",
+        ErrorType.Conflict);
 }

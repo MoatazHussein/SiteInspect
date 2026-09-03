@@ -4,14 +4,14 @@ namespace SiteInspect.Application.Features.Inspections.Common;
 
 public interface IInspectionRepository
 {
+    void Update(Inspection inspection);
+
     Task<Inspection?> GetForUpdateAsync(
         Guid inspectionId,
-        byte[] expectedRowVersion,
         CancellationToken cancellationToken = default);
 
     Task<Inspection?> GetWithObservationsForUpdateAsync(
         Guid inspectionId,
-        byte[] expectedRowVersion,
         CancellationToken cancellationToken = default);
 
     Task<Inspection?> GetWithAttachmentsAsync(

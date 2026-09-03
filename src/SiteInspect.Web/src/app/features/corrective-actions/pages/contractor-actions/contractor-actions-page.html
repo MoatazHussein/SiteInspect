@@ -1,0 +1,76 @@
+<main>
+  <section class="page-heading">
+    <div>
+      <span class="kicker">Contractor workspace</span>
+      <h1>My corrective actions</h1>
+      <p>Review assigned work and submit a short resolution note when it is complete.</p>
+    </div>
+    <button nz-button type="button" [nzLoading]="loading()" (click)="load()">Refresh</button>
+  </section>
+
+  @if (errorMessage(); as message) {
+    <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+  }
+  @if (successMessage(); as message) {
+    <nz-alert nzType="success" [nzMessage]="message" nzShowIcon />
+  }
+
+  @if (loading()) {
+    <nz-card><p role="status">Loading assigned actions…</p></nz-card>
+  } @else {
+    <section class="action-grid">
+      @for (action of actions(); track action.id) {
+        <nz-card>
+          <div class="action-heading">
+            <div>
+              <span class="inspection-number">{{ action.inspectionNumber }}</span>
+              <h2>#{{ action.observationDisplayOrder }} — {{ action.observationQuestion }}</h2>
+            </div>
+            <nz-tag [nzColor]="statusColor(action.status)">{{ action.status }}</nz-tag>
+          </div>
+
+          <p class="work-required">{{ action.description }}</p>
+          <p><strong>Due:</strong> {{ action.dueAtUtc | date: 'medium' }}</p>
+
+          @if (action.rejectionReason && action.status === 'Open') {
+            <nz-alert
+              nzType="warning"
+              nzMessage="Changes requested"
+              [nzDescription]="action.rejectionReason"
+              nzShowIcon
+            />
+          }
+
+          @if (action.status === 'Open') {
+            <label [for]="'resolution-' + action.id">Resolution notes</label>
+            <textarea
+              #resolutionNotes
+              nz-input
+              [id]="'resolution-' + action.id"
+              rows="3"
+              maxlength="2000"
+              placeholder="Describe what was fixed"
+            >{{ action.resolutionNotes }}</textarea>
+            <button
+              nz-button
+              nzType="primary"
+              type="button"
+              [nzLoading]="submittingId() === action.id"
+              [disabled]="submittingId() !== null || !resolutionNotes.value.trim()"
+              (click)="submit(action, resolutionNotes.value)"
+            >
+              Submit for review
+            </button>
+          } @else if (action.resolutionNotes) {
+            <div class="resolution">
+              <strong>Resolution submitted</strong>
+              <p>{{ action.resolutionNotes }}</p>
+            </div>
+          }
+        </nz-card>
+      } @empty {
+        <nz-card><p>No corrective actions are assigned to you.</p></nz-card>
+      }
+    </section>
+  }
+</main>

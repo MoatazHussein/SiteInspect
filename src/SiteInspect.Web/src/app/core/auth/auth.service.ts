@@ -70,7 +70,11 @@ export class AuthService {
   }
 
   defaultRoute(): string {
-    return this.hasAnyRole([roles.manager, roles.inspector]) ? '/inspections' : '/foundation';
+    if (this.hasAnyRole([roles.manager, roles.inspector])) {
+      return '/inspections';
+    }
+
+    return this.hasAnyRole([roles.contractor]) ? '/corrective-actions' : '/foundation';
   }
 
   clearSession(): void {

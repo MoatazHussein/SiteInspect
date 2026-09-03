@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using SiteInspect.Application.Common.Abstractions.Identity;
 using SiteInspect.Application.Common.Abstractions.Persistence;
 using SiteInspect.Application.Common.Exceptions;
 using SiteInspect.Domain.Common.Entities;
+using SiteInspect.Domain.CorrectiveActions.CorrectiveActionAggregate;
 using SiteInspect.Domain.Common.Numbering;
 using SiteInspect.Domain.Inspections.InspectionAggregate;
 using SiteInspect.Domain.Inspections.InspectionTemplateAggregate;
@@ -20,6 +22,8 @@ public sealed class ApplicationDbContext(
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IUnitOfWork
 {
     public DbSet<Project> Projects => Set<Project>();
+
+    public DbSet<CorrectiveAction> CorrectiveActions => Set<CorrectiveAction>();
 
     public DbSet<NumberSeriesCounter> NumberSeriesCounters => Set<NumberSeriesCounter>();
 
@@ -54,6 +58,13 @@ public sealed class ApplicationDbContext(
         }
         catch (DbUpdateConcurrencyException exception)
         {
+            throw new PersistenceConcurrencyException(exception);
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is SqlException { Number: 2601 or 2627 } &&
+            exception.Entries.Any(entry => entry.Entity is CorrectiveAction))
+        {
+            // A simultaneous create can reach the unique observation index first.
             throw new PersistenceConcurrencyException(exception);
         }
     }

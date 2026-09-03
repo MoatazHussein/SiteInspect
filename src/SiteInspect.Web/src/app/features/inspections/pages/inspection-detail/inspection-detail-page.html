@@ -137,6 +137,18 @@
       <app-inspection-checklist [inspection]="item" />
     }
 
+    @if (
+      auth.hasAnyRole([roles.manager]) &&
+      (item.status === 'Submitted' || item.status === 'CorrectiveActionsOpen' || item.status === 'Completed')
+    ) {
+      <app-corrective-action-panel
+        [inspection]="item"
+        (created)="updateCorrectiveAction($event)"
+        (completed)="loadInspection(item.id)"
+        (reloadRequested)="loadInspection(item.id)"
+      />
+    }
+
     @if (canEditChecklist(item)) {
       <nz-card class="submission-card" nzTitle="Review and submit">
         @if (submissionIssues(item).length > 0) {

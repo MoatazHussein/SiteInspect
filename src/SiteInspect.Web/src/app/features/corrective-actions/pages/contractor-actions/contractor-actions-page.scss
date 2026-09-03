@@ -1,0 +1,71 @@
+:host {
+  display: block;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.page-heading,
+.action-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-heading {
+  margin-bottom: 1.25rem;
+}
+
+.page-heading h1,
+.action-heading h2 {
+  margin: 0.35rem 0;
+  color: #153d3d;
+}
+
+.page-heading p,
+.work-required,
+.resolution p {
+  color: #61716f;
+}
+
+.kicker,
+.inspection-number {
+  color: #9a6b0d;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.action-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+label,
+textarea,
+.resolution {
+  display: block;
+  margin-top: 1rem;
+}
+
+label,
+.resolution strong {
+  font-weight: 700;
+}
+
+textarea {
+  margin-bottom: 0.75rem;
+}
+
+nz-alert {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 640px) {
+  .page-heading,
+  .action-heading {
+    flex-direction: column;
+  }
+}

@@ -2,7 +2,14 @@
 
 SiteInspect is a portfolio-grade field inspection and corrective-action platform built as a .NET 10 modular monolith with an Angular 22 PWA frontend and a separate background worker.
 
-Phase 2 now supports the complete synchronous inspection-execution workflow: Manager assignment, Inspector checklist drafts, protected photo evidence, submission validation, and immutable submitted observations. Corrective-action messaging begins in Phase 3; see the [full product and implementation plan](SiteInspect-README.md).
+Phase 2 supports the synchronous inspection-execution workflow: Manager assignment, Inspector checklist drafts, protected photo evidence, submission validation, and immutable submitted observations.
+
+Phase 3 Stages 3.0–3.4 provide the synchronous corrective-action MVP: manager assignment,
+contractor responses, manager review, and explicit inspection completion. See the
+[MVP rules and stage boundaries](docs/architecture/0003-phase-3-corrective-actions.md),
+[Stages 3.0–3.2 guide](docs/development/phase-3-stages-0-2.md), and
+[Stages 3.3–3.4 guide](docs/development/phase-3-stages-3-4.md).
+Evidence, full history, notifications, and reliable messaging remain deferred.
 
 ## Quick start
 

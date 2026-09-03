@@ -6,47 +6,28 @@ namespace SiteInspect.Infrastructure.Persistence.Repositories;
 
 internal sealed class InspectionRepository(ApplicationDbContext dbContext) : IInspectionRepository
 {
-    public async Task<Inspection?> GetForUpdateAsync(
+    // Force a root write even when adding another action leaves the status unchanged,
+    // so EF's concurrency check still covers every creation.
+    public void Update(Inspection inspection) =>
+        dbContext.Entry(inspection).State = EntityState.Modified;
+
+    public Task<Inspection?> GetForUpdateAsync(
         Guid inspectionId,
-        byte[] expectedRowVersion,
-        CancellationToken cancellationToken = default)
-    {
-        var inspection = await dbContext.Inspections
+        CancellationToken cancellationToken = default) =>
+        dbContext.Inspections
             .SingleOrDefaultAsync(item => item.Id == inspectionId, cancellationToken);
-
-        if (inspection is not null)
-        {
-            dbContext.Entry(inspection)
-                .Property(item => item.RowVersion)
-                .OriginalValue = expectedRowVersion;
-        }
-
-        return inspection;
-    }
 
     public Task AddAsync(Inspection inspection, CancellationToken cancellationToken = default) =>
         dbContext.Inspections.AddAsync(inspection, cancellationToken).AsTask();
 
-    public async Task<Inspection?> GetWithObservationsForUpdateAsync(
+    public Task<Inspection?> GetWithObservationsForUpdateAsync(
         Guid inspectionId,
-        byte[] expectedRowVersion,
-        CancellationToken cancellationToken = default)
-    {
-        var inspection = await dbContext.Inspections
+        CancellationToken cancellationToken = default) =>
+        dbContext.Inspections
             .AsSplitQuery()
             .Include(item => item.Observations)
             .ThenInclude(item => item.Attachments)
             .SingleOrDefaultAsync(item => item.Id == inspectionId, cancellationToken);
-
-        if (inspection is not null)
-        {
-            dbContext.Entry(inspection)
-                .Property(item => item.RowVersion)
-                .OriginalValue = expectedRowVersion;
-        }
-
-        return inspection;
-    }
 
     public Task<Inspection?> GetWithAttachmentsAsync(
         Guid inspectionId,

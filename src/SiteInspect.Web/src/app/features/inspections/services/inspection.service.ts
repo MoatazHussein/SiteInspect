@@ -147,6 +147,15 @@ export class InspectionService {
       .pipe(map((response) => this.requireData(response)));
   }
 
+  complete(inspectionId: string, rowVersion: string): Observable<InspectionMutationResult> {
+    return this.http
+      .post<ApiResponse<InspectionMutationResult>>(`${this.endpoint}/complete`, {
+        inspectionId,
+        rowVersion,
+      })
+      .pipe(map((response) => this.requireData(response)));
+  }
+
   private requireData<T>(response: ApiResponse<T>): T {
     if (!response.isSuccess || response.data === null) {
       throw new Error(response.errors[0]?.message ?? 'The API returned an empty response.');

@@ -28,13 +28,14 @@ public sealed class ReassignInspectionHandler(
 
         var inspection = await inspectionRepository.GetForUpdateAsync(
             command.InspectionId,
-            RowVersionToken.Decode(command.RowVersion),
             cancellationToken);
 
         if (inspection is null)
         {
             return Result<InspectionMutationResponse>.Failure(InspectionErrors.NotFound(command.InspectionId));
         }
+
+        inspection.EnsureCurrentVersion(command.RowVersion);
 
         if (inspection.Status != InspectionStatus.Assigned)
         {

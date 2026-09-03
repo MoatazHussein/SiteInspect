@@ -4,7 +4,9 @@ public static class RowVersionToken
 {
     public static bool IsValid(string? value) => TryDecode(value, out _);
 
-    public static byte[] Decode(string value) => Convert.FromBase64String(value);
+    public static bool Matches(byte[] currentVersion, string? expectedToken) =>
+        TryDecode(expectedToken, out var expectedVersion) &&
+        currentVersion.AsSpan().SequenceEqual(expectedVersion);
 
     private static bool TryDecode(string? value, out byte[] rowVersion)
     {

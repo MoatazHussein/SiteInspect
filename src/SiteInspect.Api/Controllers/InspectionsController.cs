@@ -7,6 +7,7 @@ using SiteInspect.Api.ErrorHandling;
 using SiteInspect.Application.Common.Errors;
 using SiteInspect.Application.Common.Results;
 using SiteInspect.Application.Features.Inspections.Commands.CancelInspection;
+using SiteInspect.Application.Features.Inspections.Commands.CompleteInspection;
 using SiteInspect.Application.Features.Inspections.Commands.CreateInspection;
 using SiteInspect.Application.Features.Inspections.Commands.ReassignInspection;
 using SiteInspect.Application.Features.Inspections.Commands.SaveInspectionDraft;
@@ -111,7 +112,7 @@ public sealed class InspectionsController(ISender sender) : ControllerBase
         return result.ToActionResult(HttpContext);
     }
 
-    [[HttpPost("attachments")]
+    [HttpPost("attachments")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(11 * 1024 * 1024)]
     [Authorize(Policy = AuthorizationPolicies.InspectionExecutor)]
@@ -155,6 +156,16 @@ public sealed class InspectionsController(ISender sender) : ControllerBase
     {
         var result = await sender.Send(command, cancellationToken);
 
+        return result.ToActionResult(HttpContext);
+    }
+
+    [HttpPost("complete")]
+    [Authorize(Policy = AuthorizationPolicies.InspectionManager)]
+    public async Task<IActionResult> CompleteInspection(
+        [FromBody] CompleteInspectionCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(command, cancellationToken);
         return result.ToActionResult(HttpContext);
     }
 

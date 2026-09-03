@@ -28,13 +28,14 @@ public sealed class SaveInspectionDraftHandler(
 
         var inspection = await inspectionRepository.GetWithObservationsForUpdateAsync(
             command.InspectionId,
-            RowVersionToken.Decode(command.RowVersion),
             cancellationToken);
 
         if (inspection is null)
         {
             return Result<InspectionMutationResponse>.Failure(InspectionErrors.NotFound(command.InspectionId));
         }
+
+        inspection.EnsureCurrentVersion(command.RowVersion);
 
         if (inspection.AssignedInspectorId != inspectorId)
         {

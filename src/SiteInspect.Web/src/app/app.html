@@ -20,7 +20,9 @@
             <a routerLink="/foundation">Foundation</a>
           </li>
           @if (auth.hasAnyRole([roles.contractor])) {
-            <li nz-menu-item nzDisabled>Corrective actions · Phase 3</li>
+            <li nz-menu-item routerLinkActive="ant-menu-item-selected">
+              <a routerLink="/corrective-actions">Corrective actions</a>
+            </li>
           }
           @if (auth.hasAnyRole([roles.manager])) {
             <li nz-menu-item nzDisabled>Dashboard · Phase 5</li>
@@ -37,7 +39,7 @@
           <small>{{ user.roles.join(' · ') }}</small>
         </div>
         <div class="header-actions">
-          <nz-tag nzColor="green">Phase 2</nz-tag>
+          <nz-tag nzColor="green">Phase 3 MVP</nz-tag>
           <button nz-button nzType="text" type="button" (click)="logout()">Sign out</button>
         </div>
       </nz-header>
