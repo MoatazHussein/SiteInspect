@@ -8,8 +8,12 @@
   <div class="save-status" aria-live="polite">
     @if (saveState() === 'saving') {
       <span>Saving…</span>
+    } @else if (saveState() === 'saved-locally' && savedAt(); as time) {
+      <span>Saved on this device {{ time | date: 'shortTime' }}</span>
     } @else if (saveState() === 'saved' && savedAt(); as time) {
       <span>Saved {{ time | date: 'shortTime' }}</span>
+    } @else if (editable() && !connectivity.isOnline()) {
+      <span>Offline · changes save on this device</span>
     } @else if (editable()) {
       <span>Changes save automatically</span>
     } @else {
@@ -22,6 +26,53 @@
 
 @if (errorMessage(); as message) {
   <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+}
+
+@if (hasLocalDraft()) {
+  <nz-alert
+    [nzType]="conflictDetected() ? 'warning' : 'info'"
+    [nzMessage]="conflictDetected() ? 'Local draft needs attention' : 'Changes saved on this device'"
+    [nzDescription]="
+      conflictDetected()
+        ? 'The server has a newer version. Keep this browser draft or discard it and use the server version.'
+        : connectivity.isOnline()
+          ? 'These changes are ready to be synchronized.'
+          : 'Reconnect before synchronizing these changes.'
+    "
+    nzShowIcon
+  />
+
+  <div class="local-draft-actions">
+    <button
+      nz-button
+      nzType="primary"
+      type="button"
+      [nzLoading]="syncingLocalDraft()"
+      [disabled]="
+        !connectivity.isOnline() ||
+        conflictDetected() ||
+        form.dirty ||
+        form.invalid ||
+        discardingLocalDraft()
+      "
+      (click)="syncLocalDraft()"
+    >
+      Sync now
+    </button>
+
+    <button
+      nz-button
+      nzDanger
+      type="button"
+      nz-popconfirm
+      nzPopconfirmTitle="Discard the changes saved on this device and load the server version?"
+      [nzLoading]="discardingLocalDraft()"
+      [disabled]="!connectivity.isOnline() || syncingLocalDraft()"
+      (nzOnConfirm)="discardLocalDraft()"
+    >
+      {{ conflictDetected() ? 'Use server version' : 'Discard local changes' }}
+    </button>
+  </div>
 }
 
 <form class="checklist" [formGroup]="form">
@@ -82,6 +133,7 @@
                 nz-button
                 nzType="link"
                 type="button"
+                [disabled]="!connectivity.isOnline()"
                 (click)="downloadAttachment(attachment)"
               >
                 {{ attachment.fileName }} · {{ formatFileSize(attachment.length) }}
@@ -103,6 +155,8 @@
                 type="button"
                 [nzLoading]="uploadingObservationId() === item.observation.id"
                 [disabled]="
+                  !connectivity.isOnline() ||
+                  hasLocalDraft() ||
                   uploadingObservationId() !== null ||
                   form.dirty ||
                   saveState() === 'saving' ||

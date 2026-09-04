@@ -16,6 +16,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { getApiErrorMessage } from '../../../../core/api/api-error';
 import { roles } from '../../../../core/auth/auth.models';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { ConnectivityService } from '../../../../core/connectivity/connectivity.service';
 import { InspectionChecklist } from '../../components/inspection-checklist/inspection-checklist';
 import {
   InspectionAttachmentUploaded,
@@ -55,6 +56,7 @@ export class InspectionDetailPage implements OnInit {
   private readonly inspectionService = inject(InspectionService);
 
   readonly auth = inject(AuthService);
+  readonly connectivity = inject(ConnectivityService);
   readonly roles = roles;
 
   readonly loading = signal(true);
@@ -142,7 +144,7 @@ export class InspectionDetailPage implements OnInit {
 
   startInspection(): void {
     const item = this.inspection();
-    if (!item) {
+    if (!item || !this.connectivity.isOnline()) {
       return;
     }
 
@@ -241,7 +243,7 @@ export class InspectionDetailPage implements OnInit {
   }
 
   canSubmit(item: InspectionDetail): boolean {
-    return this.canEditChecklist(item) && this.checklistReady();
+    return this.canEditChecklist(item) && this.checklistReady() && this.connectivity.isOnline();
   }
 
   submissionIssues(item: InspectionDetail): readonly string[] {
@@ -298,6 +300,7 @@ export class InspectionDetailPage implements OnInit {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (inspection) => {
+          this.checklistReady.set(true);
           this.inspection.set(inspection);
           this.assignmentForm.controls.inspectorId.setValue(inspection.assignedInspectorId);
         },

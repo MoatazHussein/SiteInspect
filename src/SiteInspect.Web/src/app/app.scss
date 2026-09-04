@@ -81,6 +81,12 @@
   background: #f2f6f5;
 }
 
+.offline-banner {
+  display: block;
+  max-width: 1180px;
+  margin: 0 auto 1rem;
+}
+
 .app-footer {
   padding: 1rem clamp(1.25rem, 4vw, 3rem);
   background: #f2f6f5;

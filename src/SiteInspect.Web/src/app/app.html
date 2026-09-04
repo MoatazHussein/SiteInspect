@@ -39,12 +39,24 @@
           <small>{{ user.roles.join(' · ') }}</small>
         </div>
         <div class="header-actions">
-          <nz-tag nzColor="green">Phase 3 MVP</nz-tag>
+          <nz-tag [nzColor]="connectivity.isOnline() ? 'green' : 'orange'">
+            {{ connectivity.isOnline() ? 'Online' : 'Offline' }}
+          </nz-tag>
+          <nz-tag nzColor="green">Phase 4 MVP</nz-tag>
           <button nz-button nzType="text" type="button" (click)="logout()">Sign out</button>
         </div>
       </nz-header>
 
       <nz-content class="app-content">
+        @if (!connectivity.isOnline()) {
+          <nz-alert
+            class="offline-banner"
+            nzType="warning"
+            nzMessage="You are offline"
+            nzDescription="Checklist outcomes and notes save on this device. All other actions require a connection."
+            nzShowIcon
+          />
+        }
         <router-outlet />
       </nz-content>
 

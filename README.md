@@ -11,6 +11,13 @@ contractor responses, manager review, and explicit inspection completion. See th
 [Stages 3.3–3.4 guide](docs/development/phase-3-stages-3-4.md).
 Evidence, full history, notifications, and reliable messaging remain deferred.
 
+Phase 4 Stages 4.0–4.4 provide the offline-first inspection MVP: a cached application shell,
+connection status, device-local checklist drafts, explicit synchronization, and simple conflict
+recovery. See the
+[offline draft decision](docs/architecture/0004-phase-4-offline-inspection-drafts.md) and
+[Stages 4.0–4.2 guide](docs/development/phase-4-stages-0-2.md) and
+[Stages 4.3–4.4 guide](docs/development/phase-4-stages-3-4.md).
+
 ## Quick start
 
 Prerequisites are documented in [Phase 0 local setup](docs/development/phase-0-setup.md). Configure the database, demo accounts, and JWT signing key using the [Phase 1 setup guide](docs/development/phase-1-setup.md).

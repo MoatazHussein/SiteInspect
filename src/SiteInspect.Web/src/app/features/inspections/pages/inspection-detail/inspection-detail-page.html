@@ -25,6 +25,7 @@
             nzType="primary"
             type="button"
             [nzLoading]="starting()"
+            [disabled]="!connectivity.isOnline()"
             (click)="startInspection()"
           >
             Start inspection
@@ -132,6 +133,7 @@
         (draftSaved)="updateDraft($event)"
         (attachmentUploaded)="updateAttachment($event)"
         (readinessChange)="checklistReady.set($event)"
+        (reloadRequested)="loadInspection(item.id)"
       />
     } @else {
       <app-inspection-checklist [inspection]="item" />

@@ -17,20 +17,26 @@ import {
   EMPTY,
   filter,
   finalize,
+  from,
   map,
   merge,
   Observable,
+  of,
   Subject,
   tap,
+  throwError,
 } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { getApiErrorMessage } from '../../../../core/api/api-error';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { ConnectivityService } from '../../../../core/connectivity/connectivity.service';
 import {
   InspectionAttachmentUploaded,
   InspectionDraftSaved,
@@ -43,7 +49,9 @@ import {
   ObservationOutcome,
   Severity,
 } from '../../models/inspection.models';
+import { OfflineInspectionDraft } from '../../models/offline-inspection-draft.models';
 import { InspectionService } from '../../services/inspection.service';
+import { OfflineInspectionDraftStore } from '../../services/offline-inspection-draft.store';
 
 type ObservationDraftForm = FormGroup<{
   observationId: FormControl<string>;
@@ -61,7 +69,18 @@ interface ChecklistSection {
   readonly items: readonly ChecklistItem[];
 }
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+type SaveState = 'idle' | 'saving' | 'saved' | 'saved-locally' | 'error';
+
+type DraftPersistenceResult =
+  | {
+      readonly location: 'server';
+      readonly rowVersion: string;
+      readonly observations: readonly SaveInspectionObservationDraft[];
+    }
+  | {
+      readonly location: 'device';
+      readonly observations: readonly SaveInspectionObservationDraft[];
+    };
 
 @Component({
   selector: 'app-inspection-checklist',
@@ -72,6 +91,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     NzButtonModule,
     NzCardModule,
     NzInputModule,
+    NzPopconfirmModule,
     NzProgressModule,
     NzRadioModule,
     NzTagModule,
@@ -83,14 +103,18 @@ export class InspectionChecklist implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly inspectionService = inject(InspectionService);
+  private readonly auth = inject(AuthService);
+  private readonly offlineDraftStore = inject(OfflineInspectionDraftStore);
   private readonly manualSaveRequests = new Subject<void>();
   private readonly rowVersion = signal('');
 
   readonly inspection = input.required<InspectionDetail>();
   readonly editable = input(false);
+  readonly connectivity = inject(ConnectivityService);
   readonly draftSaved = output<InspectionDraftSaved>();
   readonly attachmentUploaded = output<InspectionAttachmentUploaded>();
   readonly readinessChange = output<boolean>();
+  readonly reloadRequested = output<void>();
   readonly observationForms = this.formBuilder.array<ObservationDraftForm>([]);
   readonly form = this.formBuilder.group({ observations: this.observationForms });
   readonly saveState = signal<SaveState>('idle');
@@ -98,6 +122,10 @@ export class InspectionChecklist implements OnInit {
   readonly savedAt = signal<Date | null>(null);
   readonly answeredCount = signal(0);
   readonly uploadingObservationId = signal<string | null>(null);
+  readonly hasLocalDraft = signal(false);
+  readonly conflictDetected = signal(false);
+  readonly syncingLocalDraft = signal(false);
+  readonly discardingLocalDraft = signal(false);
   private readonly concurrencyBlocked = signal(false);
   private readonly attachments = signal(new Map<string, readonly InspectionAttachment[]>());
   sections: readonly ChecklistSection[] = [];
@@ -125,6 +153,11 @@ export class InspectionChecklist implements OnInit {
       return;
     }
 
+    this.form.disable({ emitEvent: false });
+    void this.initializeEditableChecklist();
+  }
+
+  private configureDraftPersistence(): void {
     const automaticSaveRequests = this.form.valueChanges.pipe(
       tap(() => {
         this.updateAnsweredCount();
@@ -143,8 +176,158 @@ export class InspectionChecklist implements OnInit {
       .subscribe();
   }
 
+  private async initializeEditableChecklist(): Promise<void> {
+    const userId = this.auth.currentUser()?.id;
+
+    try {
+      if (userId) {
+        const localDraft = await this.offlineDraftStore.get(userId, this.inspection().id);
+
+        if (localDraft) {
+          this.applyLocalDraft(localDraft);
+          this.hasLocalDraft.set(true);
+          this.savedAt.set(new Date(localDraft.savedAtUtc));
+          this.saveState.set('saved-locally');
+          this.readinessChange.emit(false);
+
+          if (localDraft.rowVersion !== this.inspection().rowVersion) {
+            this.concurrencyBlocked.set(true);
+            this.conflictDetected.set(true);
+            this.errorMessage.set(
+              'The server changed after this offline draft was created. The local copy is preserved; use the server version to resolve the conflict.',
+            );
+            return;
+          }
+
+          this.rowVersion.set(localDraft.rowVersion);
+        }
+      }
+    } catch {
+      if (!this.connectivity.isOnline()) {
+        this.concurrencyBlocked.set(true);
+        this.readinessChange.emit(false);
+        this.errorMessage.set(
+          'Offline storage is unavailable. Reconnect before editing this inspection.',
+        );
+        return;
+      }
+
+      this.errorMessage.set('Offline storage is unavailable. Online saving is still available.');
+    }
+
+    this.form.enable({ emitEvent: false });
+    this.configureDraftPersistence();
+  }
+
+  private applyLocalDraft(draft: OfflineInspectionDraft): void {
+    const observationsById = new Map(
+      draft.observations.map((observation) => [observation.observationId, observation]),
+    );
+
+    for (const observationForm of this.observationForms.controls) {
+      const localObservation = observationsById.get(
+        observationForm.controls.observationId.value,
+      );
+
+      if (!localObservation) {
+        continue;
+      }
+
+      observationForm.patchValue(
+        {
+          outcome: localObservation.outcome,
+          notes: localObservation.notes ?? '',
+        },
+        { emitEvent: false },
+      );
+    }
+
+    this.form.markAsPristine();
+    this.updateAnsweredCount();
+  }
+
   saveNow(): void {
     this.manualSaveRequests.next();
+  }
+
+  syncLocalDraft(): void {
+    const userId = this.auth.currentUser()?.id;
+    if (
+      !userId ||
+      !this.connectivity.isOnline() ||
+      !this.hasLocalDraft() ||
+      this.conflictDetected() ||
+      this.form.dirty ||
+      this.form.invalid
+    ) {
+      return;
+    }
+
+    const observations = this.getDrafts();
+    this.syncingLocalDraft.set(true);
+    this.readinessChange.emit(false);
+    this.errorMessage.set(null);
+    this.form.disable({ emitEvent: false });
+
+    this.inspectionService
+      .saveDraft(this.inspection().id, this.rowVersion(), observations)
+      .pipe(
+        concatMap((result) =>
+          from(this.offlineDraftStore.delete(userId, this.inspection().id)).pipe(
+            map(() => ({ result, localDraftDeleted: true })),
+            catchError(() => of({ result, localDraftDeleted: false })),
+          ),
+        ),
+        finalize(() => {
+          this.syncingLocalDraft.set(false);
+          if (!this.concurrencyBlocked()) {
+            this.form.enable({ emitEvent: false });
+          }
+        }),
+      )
+      .subscribe({
+        next: ({ result, localDraftDeleted }) => {
+          this.rowVersion.set(result.rowVersion);
+          this.draftSaved.emit({ rowVersion: result.rowVersion, observations });
+          this.form.markAsPristine();
+          this.savedAt.set(new Date());
+
+          if (!localDraftDeleted) {
+            this.saveState.set('saved-locally');
+            this.errorMessage.set(
+              'The server was updated, but the local copy could not be removed. Press Sync now again to retry cleanup.',
+            );
+            return;
+          }
+
+          this.hasLocalDraft.set(false);
+          this.saveState.set('saved');
+          this.readinessChange.emit(true);
+        },
+        error: (error: unknown) => this.handleMutationError(error),
+      });
+  }
+
+  discardLocalDraft(): void {
+    const userId = this.auth.currentUser()?.id;
+    if (!userId || !this.connectivity.isOnline() || !this.hasLocalDraft()) {
+      return;
+    }
+
+    this.discardingLocalDraft.set(true);
+    this.errorMessage.set(null);
+
+    from(this.offlineDraftStore.delete(userId, this.inspection().id))
+      .pipe(finalize(() => this.discardingLocalDraft.set(false)))
+      .subscribe({
+        next: () => {
+          this.hasLocalDraft.set(false);
+          this.conflictDetected.set(false);
+          this.concurrencyBlocked.set(false);
+          this.reloadRequested.emit();
+        },
+        error: () => this.errorMessage.set('The local draft could not be discarded.'),
+      });
   }
 
   clearOutcome(formIndex: number): void {
@@ -183,6 +366,16 @@ export class InspectionChecklist implements OnInit {
     inputElement.value = '';
 
     if (!file || !this.editable()) {
+      return;
+    }
+
+    if (!this.connectivity.isOnline()) {
+      this.errorMessage.set('Reconnect before adding photo evidence.');
+      return;
+    }
+
+    if (this.hasLocalDraft()) {
+      this.errorMessage.set('The local checklist draft must be synchronized before adding photos.');
       return;
     }
 
@@ -234,6 +427,11 @@ export class InspectionChecklist implements OnInit {
   }
 
   downloadAttachment(attachment: InspectionAttachment): void {
+    if (!this.connectivity.isOnline()) {
+      this.errorMessage.set('Reconnect before downloading photo evidence.');
+      return;
+    }
+
     this.inspectionService
       .downloadAttachment(this.inspection().id, attachment.id)
       .subscribe({
@@ -257,17 +455,45 @@ export class InspectionChecklist implements OnInit {
 
       const observations = this.getDrafts();
 
+      if (!this.connectivity.isOnline() || this.hasLocalDraft()) {
+        return this.saveLocalDraft(observations);
+      }
+
       return this.inspectionService.saveDraft(
         inspection.id,
         this.rowVersion(),
         observations,
-      ).pipe(map((result) => ({ result, observations })));
+      ).pipe(
+        map((result): DraftPersistenceResult => ({
+          location: 'server',
+          rowVersion: result.rowVersion,
+          observations,
+        })),
+        catchError((error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 0) {
+            return this.saveLocalDraft(observations);
+          }
+
+          return throwError(() => error);
+        }),
+      );
     }).pipe(
-      tap(({ result, observations }) => {
-        this.rowVersion.set(result.rowVersion);
-        this.draftSaved.emit({ rowVersion: result.rowVersion, observations });
+      tap((result) => {
         this.form.markAsPristine();
         this.savedAt.set(new Date());
+
+        if (result.location === 'device') {
+          this.hasLocalDraft.set(true);
+          this.saveState.set('saved-locally');
+          this.readinessChange.emit(false);
+          return;
+        }
+
+        this.rowVersion.set(result.rowVersion);
+        this.draftSaved.emit({
+          rowVersion: result.rowVersion,
+          observations: result.observations,
+        });
         this.saveState.set('saved');
         this.readinessChange.emit(true);
       }),
@@ -276,6 +502,28 @@ export class InspectionChecklist implements OnInit {
         this.handleMutationError(error);
         return EMPTY;
       }),
+    );
+  }
+
+  private saveLocalDraft(
+    observations: readonly SaveInspectionObservationDraft[],
+  ): Observable<DraftPersistenceResult> {
+    const userId = this.auth.currentUser()?.id;
+
+    if (!userId) {
+      return throwError(() => new Error('A signed-in user is required for offline storage.'));
+    }
+
+    const draft: OfflineInspectionDraft = {
+      userId,
+      inspectionId: this.inspection().id,
+      rowVersion: this.rowVersion(),
+      observations,
+      savedAtUtc: new Date().toISOString(),
+    };
+
+    return from(this.offlineDraftStore.save(draft)).pipe(
+      map((): DraftPersistenceResult => ({ location: 'device', observations })),
     );
   }
 
@@ -292,9 +540,25 @@ export class InspectionChecklist implements OnInit {
     this.saveState.set('error');
     this.errorMessage.set(getApiErrorMessage(error));
 
-    if (error instanceof HttpErrorResponse && error.status === 409) {
+    if (!(error instanceof HttpErrorResponse)) {
+      this.errorMessage.set(
+        'Changes could not be saved on this device. Reconnect before continuing.',
+      );
+      return;
+    }
+
+    if (error.status === 409) {
       this.concurrencyBlocked.set(true);
       this.form.disable({ emitEvent: false });
+
+      if (this.hasLocalDraft()) {
+        this.conflictDetected.set(true);
+        this.errorMessage.set(
+          'The inspection changed on the server. Your local draft is preserved; use the server version to resolve the conflict.',
+        );
+        return;
+      }
+
       this.errorMessage.set('This inspection changed elsewhere. Refresh the page before continuing.');
     }
   }
