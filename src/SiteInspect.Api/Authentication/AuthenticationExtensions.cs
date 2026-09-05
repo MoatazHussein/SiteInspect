@@ -22,12 +22,17 @@ internal static class AuthenticationExtensions
 
         if (string.IsNullOrWhiteSpace(signingKey))
         {
-            if (environment.IsProduction())
+            if (!environment.IsDevelopment())
             {
                 throw new InvalidOperationException("Jwt:SigningKey must be supplied outside source control.");
             }
 
             signingKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        }
+
+        if (Encoding.UTF8.GetByteCount(signingKey) < 32)
+        {
+            throw new InvalidOperationException("Jwt:SigningKey must contain at least 32 UTF-8 bytes.");
         }
 
         var jwtOptions = new JwtOptions

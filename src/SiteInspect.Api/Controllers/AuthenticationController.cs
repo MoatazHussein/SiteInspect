@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SiteInspect.Api.Contracts;
@@ -23,6 +24,7 @@ public sealed class AuthenticationController(
 
     [AllowAnonymous]
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login(
         [FromBody] LoginCommand command,
         CancellationToken cancellationToken)

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using SiteInspect.Application.Common.Abstractions.Storage;
 
 namespace SiteInspect.Infrastructure.Storage;
@@ -7,9 +8,12 @@ internal sealed class LocalInspectionAttachmentStorage : IInspectionAttachmentSt
 {
     private readonly string storageRoot;
 
-    public LocalInspectionAttachmentStorage(IHostEnvironment hostEnvironment)
+    public LocalInspectionAttachmentStorage(IHostEnvironment hostEnvironment, IConfiguration configuration)
     {
-        storageRoot = Path.Combine(hostEnvironment.ContentRootPath, "App_Data", "attachments");
+        var configuredPath = configuration["Storage:AttachmentsPath"];
+        storageRoot = string.IsNullOrWhiteSpace(configuredPath)
+            ? Path.Combine(hostEnvironment.ContentRootPath, "App_Data", "attachments")
+            : Path.GetFullPath(configuredPath, hostEnvironment.ContentRootPath);
         Directory.CreateDirectory(storageRoot);
     }
 

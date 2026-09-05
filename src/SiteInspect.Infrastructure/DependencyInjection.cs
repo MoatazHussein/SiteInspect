@@ -77,6 +77,12 @@ public static class DependencyInjection
 
         services.AddScoped<IDatabaseMigrator, DatabaseMigrator>();
         services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
+        services.Scan(scan => scan
+            .FromAssemblyOf<DatabaseSeeder>()
+            // Seed steps are internal; include non-public implementations.
+            .AddClasses(classes => classes.AssignableTo<ISeedStep>(), publicOnly: false)
+            .As<ISeedStep>()
+            .WithScopedLifetime());
 
         AddMessaging(services, configuration);
 

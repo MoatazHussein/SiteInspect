@@ -5,6 +5,9 @@ namespace SiteInspect.Api.ErrorHandling;
 
 internal static class ApiErrors
 {
+    public static readonly Error TooManyRequests = new(
+        "Api.TooManyRequests", "Too many sign-in attempts. Wait a minute and try again.", ErrorType.Failure);
+
     public static readonly Error BadRequest = new(
         "Api.BadRequest",
         "The request is invalid.",

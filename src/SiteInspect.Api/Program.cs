@@ -5,6 +5,7 @@ using Serilog;
 using SiteInspect.Api.Authentication;
 using SiteInspect.Api.Diagnostics;
 using SiteInspect.Api.ErrorHandling;
+using SiteInspect.Api.Hosting;
 using SiteInspect.Application;
 using SiteInspect.Application.Common.Abstractions.Identity;
 using SiteInspect.Infrastructure;
@@ -18,6 +19,8 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfig
     .Enrich.FromLogContext());
 
 builder.Services.AddApplication();
+builder.Configuration.ValidateProductionSettings(builder.Environment);
+builder.Services.AddApiHosting();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSiteInspectAuthorization();
@@ -38,12 +41,36 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 var app = builder.Build();
 
-await app.Services.MigrateDatabaseAsync();
-await app.Services.SeedDemoDataAsync();
+var initializeDatabase = app.Configuration.GetValue("Database:InitializeOnly", false);
+var seedDemo = app.Configuration.GetValue("DemoData:SeedOnly", false);
+if (initializeDatabase || seedDemo)
+{
+    if (initializeDatabase)
+    {
+        await app.Services.MigrateDatabaseAsync();
+    }
+    if (seedDemo)
+    {
+        await app.Services.SeedDemoDataAsync();
+    }
+    return;
+}
+
+if (app.Environment.IsDevelopment())
+{
+    await app.Services.MigrateDatabaseAsync();
+    await app.Services.SeedDemoDataAsync();
+}
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler(_ => { });
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+app.UseMiddleware<ResponseSecurityMiddleware>();
 app.UseWhen(
     context => context.Request.Path.StartsWithSegments("/api"),
     apiPipeline => apiPipeline.UseStatusCodePages(async statusCodeContext =>
@@ -59,6 +86,8 @@ app.UseWhen(
     }));
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.Local.json" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.*.Local.json" CopyToPublishDirectory="Never" />
+    <Content Update="App_Data\**" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SiteInspect.Application\SiteInspect.Application.csproj" />
     <ProjectReference Include="..\SiteInspect.Infrastructure\SiteInspect.Infrastructure.csproj" />
     <ProjectReference Include="..\SiteInspect.Web\SiteInspect.Web.esproj">

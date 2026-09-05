@@ -9,6 +9,12 @@ export function getApiErrorMessage(error: unknown): string {
     if (message) {
       return message;
     }
+    if (error.status === 0) {
+      return 'Cannot reach SiteInspect. Check your connection and try again.';
+    }
+    if (error.status === 429) {
+      return 'Too many requests. Wait a minute and try again.';
+    }
   }
 
   return 'The request could not be completed. Please try again.';

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SiteInspect.Application.Common.Errors;
+using SiteInspect.Application.Common.Exceptions;
 using SiteInspect.Application.Common.Results;
 using SiteInspect.Application.Features.Authentication.Common;
 using SiteInspect.Infrastructure.Identity.Entities;
@@ -84,7 +85,7 @@ internal sealed class UserSessionService(
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (PersistenceConcurrencyException)
         {
             return Result<AuthenticatedSession>.Failure(AuthenticationErrors.InvalidRefreshToken);
         }

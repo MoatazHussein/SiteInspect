@@ -20,6 +20,11 @@ recovery. See the
 
 ## Quick start
 
+Phase 6 prepares the portfolio release: explicit production configuration and initialization,
+private persistent uploads, login throttling, HTTPS, and a publish script. See the
+[release decision](docs/architecture/0006-mvp-release.md) and
+[hosting, backup and go-live guide](docs/development/phase-6-hosting.md).
+
 Phase 5 stages 5.0–5.5 add six manager dashboard counts, overdue/outstanding lists, project/status/due-date
 filters, and manual refresh. Managers land on the dashboard after signing in. See the
 [dashboard rules](docs/architecture/0005-phase-5-dashboard.md) and
