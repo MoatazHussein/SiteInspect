@@ -1,4 +1,6 @@
 using MassTransit;
+using SiteInspect.Application.Features.Dashboard.Common;
+using SiteInspect.Infrastructure.Persistence.ReadServices.Dashboard;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -58,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<IInspectorDirectory, InspectorDirectory>();
         services.AddScoped<IContractorDirectory, ContractorDirectory>();
         services.AddScoped<ICorrectiveActionReadService, CorrectiveActionReadService>();
+        services.AddScoped<IDashboardReadService, DashboardReadService>();
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IUserSessionService, UserSessionService>();
         services.AddScoped<IInspectionReadService, InspectionReadService>();

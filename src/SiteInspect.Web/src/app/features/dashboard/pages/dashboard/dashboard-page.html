@@ -1,0 +1,98 @@
+<main>
+  <section class="heading">
+    <div>
+      <h1>Operational dashboard</h1>
+      <p>Current inspections and corrective actions</p>
+    </div>
+    <button nz-button nzType="primary" type="button" [nzLoading]="loading()"
+      [disabled]="!connectivity.isOnline()" (click)="refresh()">Refresh</button>
+  </section>
+
+  <form (ngSubmit)="refresh()">
+    <fieldset class="filters" [disabled]="loading() || !connectivity.isOnline()">
+      <legend>Filter dashboard</legend>
+      <label>Project
+        <select name="projectId" [(ngModel)]="projectId">
+          <option value="">All projects</option>
+          @for (project of options()?.projects ?? []; track project.value) {
+            <option [value]="project.value">{{ project.label }}</option>
+          }
+        </select>
+      </label>
+      <label>Inspection status
+        <select name="status" [(ngModel)]="status">
+          <option value="">All statuses</option>
+          @for (item of options()?.statuses ?? []; track item.value) {
+            <option [value]="item.value">{{ statusLabel(item.value) }}</option>
+          }
+        </select>
+      </label>
+      <label>Due from <input name="dueFrom" type="date" [(ngModel)]="dueFrom" /></label>
+      <label>Due to <input name="dueTo" type="date" [(ngModel)]="dueTo" /></label>
+      <button nz-button nzType="primary" type="submit">Apply filters</button>
+      <button nz-button type="button" (click)="resetFilters()">Reset</button>
+    </fieldset>
+    <p class="note">Dates include the full selected days in your local time. Actions use their own due date and their inspection's project/status. Apply filters to update results.</p>
+  </form>
+  @if (optionsError(); as message) {
+    <nz-alert nzType="warning" [nzMessage]="message" nzShowIcon />
+    <button nz-button type="button" [disabled]="!connectivity.isOnline()" (click)="loadOptions()">Retry filter options</button>
+  }
+
+  @if (errorMessage(); as message) {
+    <nz-alert nzType="error" [nzMessage]="message" nzShowIcon />
+  }
+  @if (!connectivity.isOnline() && summary()) {
+    <nz-alert nzType="warning" nzMessage="Offline — showing the last loaded summary." nzShowIcon />
+  }
+  @if (loading() && !summary()) {
+    <nz-card><nz-skeleton nzActive /></nz-card>
+  }
+  @if (summary(); as data) {
+    <p class="updated" aria-live="polite">Last loaded: {{ data.generatedAtUtc | date: 'medium' }}</p>
+    <section class="metrics" aria-label="Operational summary" [attr.aria-busy]="loading()">
+      @for (metric of metrics; track metric.key) {
+        <nz-card>
+          <h2>{{ metric.label }}</h2>
+          <strong class="value">{{ data[metric.key] }}</strong>
+          <p>{{ metric.description }}</p>
+        </nz-card>
+      }
+    </section>
+    <p class="note">Counts include synchronized work only. Overdue and review counts overlap with active or outstanding totals.</p>
+
+    <section class="work-list" aria-labelledby="overdue-heading">
+      <h2 id="overdue-heading">Overdue inspections</h2>
+      <p>Showing {{ data.overdueInspectionItems.length }} of {{ data.overdueInspections }} · Earliest due first · Maximum 10</p>
+      @for (item of data.overdueInspectionItems; track item.id) {
+        <article>
+          <div>
+            <a [routerLink]="['/inspections', item.id]">{{ item.number }}</a>
+            <p>{{ item.projectName }} · {{ item.inspectorName }}</p>
+          </div>
+          <div>{{ statusLabel(item.status) }}<p>Due {{ item.dueAtUtc | date: 'medium' }}</p></div>
+        </article>
+      } @empty {
+        <p>No overdue inspections match the applied filters.</p>
+      }
+    </section>
+
+    <section class="work-list" aria-labelledby="actions-heading">
+      <h2 id="actions-heading">Outstanding corrective actions</h2>
+      <p>Showing {{ data.outstandingActionItems.length }} of {{ data.outstandingCorrectiveActions }} · Earliest due first · Maximum 10</p>
+      @for (item of data.outstandingActionItems; track item.id) {
+        <article>
+          <div>
+            <a [routerLink]="['/inspections', item.inspectionId]">{{ item.inspectionNumber }} — View inspection actions</a>
+            <p>{{ item.description }}</p>
+            <p>{{ item.projectName }} · {{ item.contractorName }}</p>
+          </div>
+          <div>{{ statusLabel(item.status) }}<p>Due {{ item.dueAtUtc | date: 'medium' }}</p></div>
+        </article>
+      } @empty {
+        <p>No outstanding actions match the applied filters.</p>
+      }
+    </section>
+    <a routerLink="/inspections" nz-button>Open inspection register</a>
+  }
+</main>

@@ -25,7 +25,9 @@
             </li>
           }
           @if (auth.hasAnyRole([roles.manager])) {
-            <li nz-menu-item nzDisabled>Dashboard · Phase 5</li>
+            <li nz-menu-item routerLinkActive="ant-menu-item-selected">
+              <a routerLink="/dashboard">Dashboard</a>
+            </li>
           }
         </ul>
       </nav>
@@ -42,7 +44,7 @@
           <nz-tag [nzColor]="connectivity.isOnline() ? 'green' : 'orange'">
             {{ connectivity.isOnline() ? 'Online' : 'Offline' }}
           </nz-tag>
-          <nz-tag nzColor="green">Phase 4 MVP</nz-tag>
+          <nz-tag nzColor="green">Phase 5 MVP</nz-tag>
           <button nz-button nzType="text" type="button" (click)="logout()">Sign out</button>
         </div>
       </nz-header>

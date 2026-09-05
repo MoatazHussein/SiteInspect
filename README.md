@@ -20,6 +20,12 @@ recovery. See the
 
 ## Quick start
 
+Phase 5 stages 5.0–5.5 add six manager dashboard counts, overdue/outstanding lists, project/status/due-date
+filters, and manual refresh. Managers land on the dashboard after signing in. See the
+[dashboard rules](docs/architecture/0005-phase-5-dashboard.md) and
+[initial verification guide](docs/development/phase-5-stages-0-2.md) and
+[remaining stages guide](docs/development/phase-5-stages-3-5.md).
+
 Prerequisites are documented in [Phase 0 local setup](docs/development/phase-0-setup.md). Configure the database, demo accounts, and JWT signing key using the [Phase 1 setup guide](docs/development/phase-1-setup.md).
 
 ```powershell

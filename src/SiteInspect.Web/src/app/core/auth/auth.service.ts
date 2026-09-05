@@ -70,7 +70,10 @@ export class AuthService {
   }
 
   defaultRoute(): string {
-    if (this.hasAnyRole([roles.manager, roles.inspector])) {
+    if (this.hasAnyRole([roles.manager])) {
+      return '/dashboard';
+    }
+    if (this.hasAnyRole([roles.inspector])) {
       return '/inspections';
     }
 
