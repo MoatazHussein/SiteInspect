@@ -77,7 +77,7 @@ export class AuthService {
       return '/inspections';
     }
 
-    return this.hasAnyRole([roles.contractor]) ? '/corrective-actions' : '/foundation';
+    return this.hasAnyRole([roles.contractor]) ? '/corrective-actions' : '/login';
   }
 
   clearSession(): void {

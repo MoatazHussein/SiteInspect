@@ -19,6 +19,29 @@ modify a database, install IIS, or upload anything. No tests run.
 
 ## 2. Prepare the host
 
+### Updating an existing IIS folder
+
+Stop the SiteInspect app pool, then publish and copy in one command:
+
+```powershell
+.\scripts\publish-mvp.ps1 -DeployPath 'D:\IIS Sites\SiteInspect'
+```
+
+Or copy an already published release:
+
+```powershell
+.\scripts\deploy-mvp.ps1 -ReleasePath '.\artifacts\YOUR-RELEASE-FOLDER' -DestinationPath 'D:\IIS Sites\SiteInspect'
+```
+
+The copy preserves existing root `web.config`, `appsettings.json`, and
+`appsettings.Production.json` byte-for-byte. Missing files are copied for fresh installs.
+Publish output always contains the complete configuration. Merge any new required settings
+into the server files manually. The scripts show live command output and do not manage IIS.
+Apply required migrations, then start the app pool. Copying requires write access to the IIS folder.
+Destination-only files are retained; this is an in-place update, not a clean release or rollback.
+
+### Host setup
+
 Install IIS and the .NET 10 Hosting Bundle on a Windows host. Use a dedicated application pool with
 No Managed Code, and point the site at the published folder. Bind your hostname with a valid HTTPS
 certificate on port 443. Keep the generated web.config. Node is needed to build, not to run this package.
@@ -43,18 +66,19 @@ Double underscores map to configuration colons. Restart the pool after changing 
 | Jwt__SigningKey | Random persistent secret of at least 32 bytes; a base64-encoded 64-byte random key works |
 | Storage__AttachmentsPath | Absolute private persistent folder outside the release folder |
 | Messaging__Enabled | false |
-| MEDIATR_LICENSE_KEY | Your license key if using the licensed distribution; read the note below |
 
 Generate the signing key in a private server session or password manager, and keep it stable across
 deployments. Never include it in frontend environment files. Production startup reports missing setting
 names without printing their values. Backend Development mode is not the public-host configuration.
 
-The installed MediatR 14.2.0 emitted a missing-license warning during the local Production check.
-It supports MEDIATR_LICENSE_KEY directly. Confirm your chosen license before public hosting; the vendor
-offers a Community license for qualifying individuals/organizations and an alternative source license.
-See the [vendor licensing FAQ](https://luckypennysoftware.com/faq). This release does not suppress
-the warning, acquire a license, or change the dependency version. npm also reported one existing
-moderate audit finding during publish; no automatic dependency upgrades were applied.
+MediatR is pinned centrally to 12.5.0 under Apache-2.0, which permits local and remote production
+deployment without a MediatR license key, subject to the license terms. Preserve applicable license
+and attribution notices when distributing the application. Review licensing before upgrading to 13
+or later; see the [maintainer's release notes](https://github.com/LuckyPennySoftware/MediatR/releases/tag/v13.0.0).
+Republish and redeploy the API to replace any previously deployed MediatR 14 binaries.
+
+npm reported one existing moderate audit finding during the earlier publish; no automatic dependency
+upgrades were applied.
 
 ## 4. Initialize once, before starting IIS
 

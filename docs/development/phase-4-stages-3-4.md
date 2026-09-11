@@ -16,7 +16,7 @@ Automatic/background synchronization and field-level conflict merging are intent
 ## Manual UI check
 
 1. Open an assigned `InProgress` inspection while online, switch the browser network to Offline,
-   edit outcomes or notes, and wait for **Saved on this device**.
+   edit outcomes or notes, press **Save changes**, and wait for **Saved on this device**.
 2. Reconnect. Press **Sync now** and confirm the local notice disappears, the IndexedDB record is
    removed, and normal photo and submission actions become available.
 3. To exercise a conflict, create another offline draft, then update the same inspection from a

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, DOCUMENT, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -49,11 +49,14 @@ import { CorrectiveActionCreated } from '../../../corrective-actions/models/corr
   ],
   templateUrl: './inspection-detail-page.html',
   styleUrl: './inspection-detail-page.scss',
+  host: { '(window:beforeunload)': 'warnBeforeUnload($event)' },
 })
 export class InspectionDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly formBuilder = inject(FormBuilder);
   private readonly inspectionService = inject(InspectionService);
+  private readonly browserWindow = inject(DOCUMENT).defaultView;
+  private readonly checklist = viewChild(InspectionChecklist);
 
   readonly auth = inject(AuthService);
   readonly connectivity = inject(ConnectivityService);
@@ -93,6 +96,23 @@ export class InspectionDetailPage implements OnInit {
         next: (options) => this.managementOptions.set(options),
         error: (error: unknown) => this.errorMessage.set(getApiErrorMessage(error)),
       });
+    }
+  }
+
+  canLeavePage(): boolean {
+    // Explicit sign-out already asked before clearing the session.
+    if (!this.auth.isAuthenticated() || !this.checklist()?.hasPendingChanges()) {
+      return true;
+    }
+
+    return this.browserWindow?.confirm(
+      'Checklist changes are unsaved or still being saved. Leave this page? Unsaved changes will be lost.',
+    ) ?? false;
+  }
+
+  warnBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.checklist()?.hasPendingChanges()) {
+      event.preventDefault();
     }
   }
 
@@ -300,7 +320,7 @@ export class InspectionDetailPage implements OnInit {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (inspection) => {
-          this.checklistReady.set(true);
+          this.checklistReady.set(!this.canEditChecklist(inspection));
           this.inspection.set(inspection);
           this.assignmentForm.controls.inspectorId.setValue(inspection.assignedInspectorId);
         },

@@ -12,17 +12,13 @@ import {
 import {
   catchError,
   concatMap,
-  debounceTime,
   defer,
   EMPTY,
-  filter,
   finalize,
   from,
   map,
-  merge,
   Observable,
   of,
-  Subject,
   tap,
   throwError,
 } from 'rxjs';
@@ -105,7 +101,6 @@ export class InspectionChecklist implements OnInit {
   private readonly inspectionService = inject(InspectionService);
   private readonly auth = inject(AuthService);
   private readonly offlineDraftStore = inject(OfflineInspectionDraftStore);
-  private readonly manualSaveRequests = new Subject<void>();
   private readonly rowVersion = signal('');
 
   readonly inspection = input.required<InspectionDetail>();
@@ -157,23 +152,13 @@ export class InspectionChecklist implements OnInit {
     void this.initializeEditableChecklist();
   }
 
-  private configureDraftPersistence(): void {
-    const automaticSaveRequests = this.form.valueChanges.pipe(
-      tap(() => {
+  private trackChecklistChanges(): void {
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
         this.updateAnsweredCount();
         this.readinessChange.emit(false);
-      }),
-      debounceTime(800),
-      map(() => undefined),
-    );
-
-    merge(automaticSaveRequests, this.manualSaveRequests)
-      .pipe(
-        filter(() => this.form.valid && this.form.dirty && this.form.enabled),
-        concatMap(() => this.persistDraft()),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe();
+      });
   }
 
   private async initializeEditableChecklist(): Promise<void> {
@@ -182,6 +167,9 @@ export class InspectionChecklist implements OnInit {
     try {
       if (userId) {
         const localDraft = await this.offlineDraftStore.get(userId, this.inspection().id);
+        if (this.destroyRef.destroyed) {
+          return;
+        }
 
         if (localDraft) {
           this.applyLocalDraft(localDraft);
@@ -215,8 +203,11 @@ export class InspectionChecklist implements OnInit {
       this.errorMessage.set('Offline storage is unavailable. Online saving is still available.');
     }
 
-    this.form.enable({ emitEvent: false });
-    this.configureDraftPersistence();
+    if (!this.destroyRef.destroyed) {
+      this.form.enable({ emitEvent: false });
+      this.trackChecklistChanges();
+      this.readinessChange.emit(!this.hasLocalDraft());
+    }
   }
 
   private applyLocalDraft(draft: OfflineInspectionDraft): void {
@@ -247,7 +238,25 @@ export class InspectionChecklist implements OnInit {
   }
 
   saveNow(): void {
-    this.manualSaveRequests.next();
+    if (!this.editable() || this.form.disabled || this.form.pristine || this.isBusy()) {
+      return;
+    }
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.persistDraft().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+  }
+
+  isBusy(): boolean {
+    return this.saveState() === 'saving' || this.syncingLocalDraft() ||
+      this.discardingLocalDraft() || this.uploadingObservationId() !== null;
+  }
+
+  hasPendingChanges(): boolean {
+    return this.form.dirty || this.isBusy();
   }
 
   syncLocalDraft(): void {
@@ -257,6 +266,8 @@ export class InspectionChecklist implements OnInit {
       !this.connectivity.isOnline() ||
       !this.hasLocalDraft() ||
       this.conflictDetected() ||
+      this.form.disabled ||
+      this.isBusy() ||
       this.form.dirty ||
       this.form.invalid
     ) {
@@ -284,6 +295,7 @@ export class InspectionChecklist implements OnInit {
             this.form.enable({ emitEvent: false });
           }
         }),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: ({ result, localDraftDeleted }) => {
@@ -310,20 +322,30 @@ export class InspectionChecklist implements OnInit {
 
   discardLocalDraft(): void {
     const userId = this.auth.currentUser()?.id;
-    if (!userId || !this.connectivity.isOnline() || !this.hasLocalDraft()) {
+    if (!userId || !this.connectivity.isOnline() || !this.hasLocalDraft() || this.isBusy()) {
       return;
     }
 
     this.discardingLocalDraft.set(true);
     this.errorMessage.set(null);
+    this.form.disable({ emitEvent: false });
 
     from(this.offlineDraftStore.delete(userId, this.inspection().id))
-      .pipe(finalize(() => this.discardingLocalDraft.set(false)))
+      .pipe(
+        finalize(() => {
+          this.discardingLocalDraft.set(false);
+          if (!this.concurrencyBlocked()) {
+            this.form.enable({ emitEvent: false });
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: () => {
           this.hasLocalDraft.set(false);
           this.conflictDetected.set(false);
           this.concurrencyBlocked.set(false);
+          this.form.markAsPristine();
           this.reloadRequested.emit();
         },
         error: () => this.errorMessage.set('The local draft could not be discarded.'),
@@ -331,7 +353,13 @@ export class InspectionChecklist implements OnInit {
   }
 
   clearOutcome(formIndex: number): void {
-    this.observationForms.at(formIndex).controls.outcome.setValue(null);
+    const outcome = this.observationForms.at(formIndex).controls.outcome;
+    if (!this.editable() || this.form.disabled || this.isBusy() || outcome.value === null) {
+      return;
+    }
+
+    outcome.markAsDirty();
+    outcome.setValue(null);
   }
 
   severityColor(severity: Severity): string {
@@ -365,7 +393,7 @@ export class InspectionChecklist implements OnInit {
     const file = inputElement.files?.[0];
     inputElement.value = '';
 
-    if (!file || !this.editable()) {
+    if (!file || !this.editable() || this.form.disabled || this.isBusy()) {
       return;
     }
 
@@ -380,7 +408,7 @@ export class InspectionChecklist implements OnInit {
     }
 
     if (this.form.dirty || this.saveState() === 'saving') {
-      this.errorMessage.set('Wait for the current checklist changes to save before adding a photo.');
+      this.errorMessage.set('Save the checklist changes before adding a photo.');
       return;
     }
 
@@ -396,12 +424,15 @@ export class InspectionChecklist implements OnInit {
 
     this.inspectionService
       .uploadAttachment(this.inspection().id, observationId, this.rowVersion(), file)
-      .pipe(finalize(() => {
-        this.uploadingObservationId.set(null);
-        if (!this.concurrencyBlocked()) {
-          this.form.enable({ emitEvent: false });
-        }
-      }))
+      .pipe(
+        finalize(() => {
+          this.uploadingObservationId.set(null);
+          if (!this.concurrencyBlocked()) {
+            this.form.enable({ emitEvent: false });
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: (uploaded) => {
           this.rowVersion.set(uploaded.rowVersion);
@@ -452,6 +483,8 @@ export class InspectionChecklist implements OnInit {
       const inspection = this.inspection();
       this.saveState.set('saving');
       this.errorMessage.set(null);
+      this.readinessChange.emit(false);
+      this.form.disable({ emitEvent: false });
 
       const observations = this.getDrafts();
 
@@ -501,6 +534,11 @@ export class InspectionChecklist implements OnInit {
       catchError((error: unknown) => {
         this.handleMutationError(error);
         return EMPTY;
+      }),
+      finalize(() => {
+        if (!this.concurrencyBlocked()) {
+          this.form.enable({ emitEvent: false });
+        }
       }),
     );
   }

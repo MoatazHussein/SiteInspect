@@ -14,11 +14,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'foundation',
-    loadChildren: () =>
-      import('./features/foundation/foundation.routes').then((routes) => routes.FOUNDATION_ROUTES),
-  },
-  {
     path: 'corrective-actions',
     loadChildren: () =>
       import('./features/corrective-actions/corrective-actions.routes').then(

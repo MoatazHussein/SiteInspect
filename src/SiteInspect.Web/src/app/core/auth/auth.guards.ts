@@ -11,7 +11,10 @@ export const authGuard: CanActivateFn = () => {
 export const guestGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  return authService.isAuthenticated() ? router.createUrlTree([authService.defaultRoute()]) : true;
+  const defaultRoute = authService.defaultRoute();
+  return authService.isAuthenticated() && defaultRoute !== '/login'
+    ? router.createUrlTree([defaultRoute])
+    : true;
 };
 
 export const roleGuard: CanActivateFn = (route) => {
@@ -19,5 +22,7 @@ export const roleGuard: CanActivateFn = (route) => {
   const router = inject(Router);
   const expectedRoles = (route.data['roles'] as readonly string[] | undefined) ?? [];
 
-  return authService.hasAnyRole(expectedRoles) ? true : router.createUrlTree(['/foundation']);
+  return authService.hasAnyRole(expectedRoles)
+    ? true
+    : router.createUrlTree([authService.defaultRoute()]);
 };

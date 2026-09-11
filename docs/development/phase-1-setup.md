@@ -23,7 +23,7 @@ Demo accounts:
 
 The repository currently provides MVP demo-password defaults in `appsettings.json`. Treat them as public demo credentials and override all three through user-secrets or environment configuration before exposing a deployment. The seeder never logs passwords and synchronizes the configured values only for the three fixed fictional demo accounts.
 
-MediatR 14 discovers its license key from the `MEDIATR_LICENSE_KEY` environment variable. Do not commit the key to application settings or source control.
+MediatR is pinned to 12.5.0, the Apache-2.0 release. No MediatR license key is required for local or remote production deployment. Review licensing before upgrading to 13 or later.
 
 ## Database migration
 

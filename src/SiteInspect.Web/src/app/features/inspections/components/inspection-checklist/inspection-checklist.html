@@ -5,22 +5,46 @@
     <p>{{ answeredCount() }} of {{ observationForms.length }} items answered</p>
   </div>
 
-  <div class="save-status" aria-live="polite">
-    @if (saveState() === 'saving') {
-      <span>Saving…</span>
-    } @else if (saveState() === 'saved-locally' && savedAt(); as time) {
-      <span>Saved on this device {{ time | date: 'shortTime' }}</span>
-    } @else if (saveState() === 'saved' && savedAt(); as time) {
-      <span>Saved {{ time | date: 'shortTime' }}</span>
-    } @else if (editable() && !connectivity.isOnline()) {
-      <span>Offline · changes save on this device</span>
-    } @else if (editable()) {
-      <span>Changes save automatically</span>
-    } @else {
-      <span>Read-only</span>
-    }
-  </div>
+  @if (!editable()) {
+    <span class="save-status">Read-only</span>
+  }
 </section>
+
+@if (editable()) {
+  <div class="checklist-actions" aria-label="Checklist saving">
+    <div class="save-status" aria-live="polite">
+      @if (saveState() === 'saving') {
+        <span>Saving…</span>
+      } @else if (syncingLocalDraft()) {
+        <span>Synchronizing…</span>
+      } @else if (form.dirty) {
+        <span class="unsaved-status">Unsaved changes</span>
+      } @else if (hasLocalDraft()) {
+        <span>Saved on this device</span>
+      } @else {
+        <span>Saved</span>
+      }
+      @if (!form.dirty && !isBusy() && savedAt(); as time) {
+        <small>{{ time | date: 'shortTime' }}</small>
+      }
+      @if (!connectivity.isOnline()) {
+        <small>Offline · Save changes stores outcomes and notes on this device.</small>
+      } @else if (hasLocalDraft()) {
+        <small>Save any new edits, then use Sync now to update the server.</small>
+      }
+    </div>
+    <button
+      nz-button
+      nzType="primary"
+      type="button"
+      [nzLoading]="saveState() === 'saving'"
+      [disabled]="form.pristine || form.invalid || form.disabled || isBusy()"
+      (click)="saveNow()"
+    >
+      Save changes
+    </button>
+  </div>
+}
 
 <nz-progress [nzPercent]="progressPercent()" [nzShowInfo]="false" />
 
@@ -53,7 +77,8 @@
         conflictDetected() ||
         form.dirty ||
         form.invalid ||
-        discardingLocalDraft()
+        form.disabled ||
+        isBusy()
       "
       (click)="syncLocalDraft()"
     >
@@ -65,9 +90,9 @@
       nzDanger
       type="button"
       nz-popconfirm
-      nzPopconfirmTitle="Discard the changes saved on this device and load the server version?"
+      nzPopconfirmTitle="Discard all local changes, including unsaved edits, and load the server version?"
       [nzLoading]="discardingLocalDraft()"
-      [disabled]="!connectivity.isOnline() || syncingLocalDraft()"
+      [disabled]="!connectivity.isOnline() || isBusy()"
       (nzOnConfirm)="discardLocalDraft()"
     >
       {{ conflictDetected() ? 'Use server version' : 'Discard local changes' }}
@@ -105,7 +130,13 @@
           </nz-radio-group>
 
           @if (editable()) {
-            <button nz-button nzType="link" type="button" (click)="clearOutcome(item.formIndex)">
+            <button
+              nz-button
+              nzType="link"
+              type="button"
+              [disabled]="form.disabled || isBusy()"
+              (click)="clearOutcome(item.formIndex)"
+            >
               Clear
             </button>
           }
@@ -148,6 +179,7 @@
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 hidden
+                [disabled]="form.disabled || isBusy()"
                 (change)="selectAttachment(item.observation.id, $event)"
               />
               <button
@@ -159,6 +191,7 @@
                   hasLocalDraft() ||
                   uploadingObservationId() !== null ||
                   form.dirty ||
+                  form.disabled ||
                   saveState() === 'saving' ||
                   attachmentsFor(item.observation.id).length >= 5
                 "
@@ -174,18 +207,3 @@
     }
   </div>
 </form>
-
-@if (editable()) {
-  <div class="checklist-actions">
-    <button
-      nz-button
-      nzType="primary"
-      type="button"
-      [nzLoading]="saveState() === 'saving'"
-      [disabled]="form.pristine || form.invalid || form.disabled"
-      (click)="saveNow()"
-    >
-      Save now
-    </button>
-  </div>
-}

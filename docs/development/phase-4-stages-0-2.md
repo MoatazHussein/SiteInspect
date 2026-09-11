@@ -17,7 +17,7 @@ Manual synchronization, conflict resolution, and local-draft cleanup are covered
 1. While online, sign in as the assigned inspector and open an `InProgress` inspection.
 2. In browser developer tools, switch the network to Offline. Confirm the header and warning banner
    show the offline state.
-3. Change an outcome or note and wait for **Saved on this device**. In developer tools, confirm the
+3. Change an outcome or note, press **Save changes**, and wait for **Saved on this device**. In developer tools, confirm the
    draft exists under Application > IndexedDB > `siteinspect-offline` > `inspection-drafts`.
 4. Return online. Confirm the local-draft notice remains and offers an explicit **Sync now** action.
 

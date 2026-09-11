@@ -51,8 +51,15 @@ public sealed class AuthenticationController(
     public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {
         Request.Cookies.TryGetValue(RefreshCookieName, out var refreshToken);
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Result<AuthenticationSessionResponse>
+                .Failure(AuthenticationErrors.InvalidRefreshToken)
+                .ToActionResult(HttpContext);
+        }
+
         var result = await sender.Send(
-            new RefreshSessionCommand(refreshToken ?? string.Empty),
+            new RefreshSessionCommand(refreshToken),
             cancellationToken);
 
         if (result.IsFailure)

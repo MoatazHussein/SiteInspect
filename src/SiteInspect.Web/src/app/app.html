@@ -16,9 +16,6 @@
               <a routerLink="/inspections">Inspections</a>
             </li>
           }
-          <li nz-menu-item routerLinkActive="ant-menu-item-selected">
-            <a routerLink="/foundation">Foundation</a>
-          </li>
           @if (auth.hasAnyRole([roles.contractor])) {
             <li nz-menu-item routerLinkActive="ant-menu-item-selected">
               <a routerLink="/corrective-actions">Corrective actions</a>
@@ -55,7 +52,7 @@
             class="offline-banner"
             nzType="warning"
             nzMessage="You are offline"
-            nzDescription="Checklist outcomes and notes save on this device. All other actions require a connection."
+            nzDescription="Use Save changes to store checklist outcomes and notes on this device. All other actions require a connection."
             nzShowIcon
           />
         }

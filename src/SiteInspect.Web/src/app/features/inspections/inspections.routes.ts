@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from '../../core/auth/auth.guards';
 import { roles } from '../../core/auth/auth.models';
+import type { InspectionDetailPage } from './pages/inspection-detail/inspection-detail-page';
 
 export const INSPECTIONS_ROUTES: Routes = [
   {
@@ -28,6 +29,7 @@ export const INSPECTIONS_ROUTES: Routes = [
       },
       {
         path: ':inspectionId',
+        canDeactivate: [(component: InspectionDetailPage) => component.canLeavePage()],
         loadComponent: () =>
           import('./pages/inspection-detail/inspection-detail-page').then(
             (component) => component.InspectionDetailPage,

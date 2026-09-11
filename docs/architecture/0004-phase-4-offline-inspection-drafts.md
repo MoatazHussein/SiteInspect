@@ -18,6 +18,10 @@ workflow.
   photo upload and download, manager actions, and corrective actions remain online-only.
 - One local draft is stored in IndexedDB for each signed-in user and inspection. It includes the
   observations, the server row-version token, and the local save time.
+- Checklist edits are saved only when the inspector chooses **Save changes**, online or offline.
+  A sticky action bar shows unsaved, saving, server-saved, or device-saved status. Editing is disabled
+  while saving. Navigation, sign-out, and browser refresh/close warn about unsaved edits; already-saved
+  device drafts do not trigger the warning. There is no checklist Cancel/undo action.
 - The service worker caches the application shell and static assets only. Authenticated API
   responses are not cached.
 - A local draft is restored only for the same user and inspection. If its row version differs from
